@@ -63,6 +63,7 @@ private:
     std::array<float, 3> defaultFormants_{};
     bool voiced_ = false;
     float lastF0_ = 0.f;
+    float noiseRms_ = 0.01f;
 };
 
 /**

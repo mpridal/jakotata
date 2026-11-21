@@ -189,7 +189,9 @@ oboe::DataCallbackResult AudioEngine::onBothStreamsReady(const void* inputData, 
     // Test latence: cvaknutí a čekání, až dorazí do mikrofonu.
     int lat = latState_.load();
     if (lat == 1) {
-        for (int i = 0; i < std::min(n, 24); ++i) out[i] = (i % 2 ? -0.9f : 0.9f);
+        // Cvaknutí = 5 ms tónu 1 kHz (reproduktor i mikrofon ho přenesou).
+        int len = std::min(n, static_cast<int>(sampleRate_ * 0.005f));
+        for (int i = 0; i < len; ++i) out[i] = 0.9f * std::sin(2.f * kPi * 1000.f * i / sampleRate_);
         latFrames_.store(0);
         latState_.store(2);
         return oboe::DataCallbackResult::Continue;
@@ -197,7 +199,7 @@ oboe::DataCallbackResult AudioEngine::onBothStreamsReady(const void* inputData, 
     if (lat == 2) {
         int base = latFrames_.load();
         for (int i = 0; i < n; ++i) {
-            if (std::fabs(in[i]) > 0.25f) {
+            if (std::fabs(in[i]) > 0.08f) {
                 latResult_.store(static_cast<int>((base + i) / sampleRate_ * 1000.f));
                 latState_.store(0);
                 break;

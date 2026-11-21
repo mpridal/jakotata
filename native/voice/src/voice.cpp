@@ -38,6 +38,7 @@ void VoiceTracker::setup(float sampleRate, float defaultF0, std::array<float, 3>
     defaultFormants_ = defaultFormants;
     std::fill(ring_.begin(), ring_.end(), 0.f);
     ringPos_ = phase_ = sinceAnalysis_ = analysisCount_ = 0;
+    noiseRms_ = 0.01f;  // začne výš a rychle klesne na skutečný šum
     f0Median_.clear();
     for (auto& m : fMedian_) m.clear();
 }
@@ -61,8 +62,13 @@ void VoiceTracker::analyze() {
     float energy = 0.f;
     for (float v : linear_) energy += v * v;
     float rms = std::sqrt(energy / kDecimatedWindow);
+    // Hladina šumu: rychle dolů, pomalu nahoru. F0 jen ≥ 10 dB nad šumem – jinak by se do mediánu
+    // započítalo hučení a šum pozadí, když nikdo nemluví.
+    if (rms < noiseRms_) noiseRms_ += (rms - noiseRms_) * 0.3f;
+    else noiseRms_ += (rms - noiseRms_) * 0.0005f;
+    noiseRms_ = std::max(noiseRms_, 1e-5f);
     float conf = 0.f;
-    float f0 = rms > 0.003f ? yin_.detect(linear_.data(), kDecimatedWindow, sampleRate_ / decim_, kFmin, kFmax, 0.15f, &conf) : 0.f;
+    float f0 = (rms > 0.003f && rms > noiseRms_ * 3.16f) ? yin_.detect(linear_.data(), kDecimatedWindow, sampleRate_ / decim_, kFmin, kFmax, 0.15f, &conf) : 0.f;
     voiced_ = f0 > 0.f && conf > 0.6f;
     lastF0_ = voiced_ ? f0 : 0.f;
     if (!voiced_) return;

@@ -72,6 +72,17 @@ TEST(VoiceTracker, MedianOfHarmonicSignal) {
     EXPECT_NEAR(t.medianF0(), 260.f, 260.f * 0.02f);
 }
 
+TEST(VoiceTracker, IgnoresQuietBackgroundHum) {
+    // 2 s tichého hučení 286 Hz (pozadí), pak 2 s hlasu 110 Hz o 26 dB hlasitěji → medián = hlas.
+    VoiceTracker t;
+    t.setup(kSr, 250.f, {700, 2000, 3200});
+    auto hum = harmonic(286.f, 2.f, kSr, 3, 0.015f);
+    auto voice = harmonic(110.f, 2.f, kSr, 8, 0.3f);
+    for (size_t i = 0; i + 480 <= hum.size(); i += 480) t.push(hum.data() + i, 480);
+    for (size_t i = 0; i + 480 <= voice.size(); i += 480) t.push(voice.data() + i, 480);
+    EXPECT_NEAR(t.medianF0(), 110.f, 110.f * 0.03f);
+}
+
 TEST(Biquad, PeakingHasRequestedGainAtCenter) {
     Biquad b;
     b.setPeaking(kSr, 1000.f, 1.4f, 6.f);
