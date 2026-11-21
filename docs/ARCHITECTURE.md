@@ -48,3 +48,16 @@ TODO: release.yml (milník 9) zúží ABI na `arm64-v8a`.
 
 `allowBackup=false` a `dataExtractionRules`, které vylučují vše z cloudové zálohy i přenosu
 na nový telefon (zadání kap. 8). `INTERNET` jen pro kontrolu aktualizací.
+
+## Obraz (milník 2)
+
+- **Kamera:** CameraX, dva výstupy se stejným poměrem 16:9 – náhled 1280×720 do OES textury rendereru
+  a analýza 640×360 (RGBA) pro MediaPipe. Shodný poměr stran zaručí, že body obličeje sedí na obraz.
+- **Render:** vlastní EGL vlákno (`core/render/CameraRenderer`), kontext ES 3 s `EGL_RECORDABLE_ANDROID`
+  pro pozdější sdílení s enkodérem videa. Výstupem je `TextureView`, ne `SurfaceView`: skleněné
+  rozmazání (Haze) potřebuje obsah v hierarchii view.
+- **Mapování:** `DisplayMapping` – narovnání podle `rotationDegrees` z CameraX, center crop na celou
+  plochu a zrcadlení přední kamery. Stejné mapování pro obraz (shader) i body (síť).
+- **Obličej:** MediaPipe Face Landmarker, LIVE_STREAM, GPU delegate s CPU zálohou, model v assets
+  (nekomprimovaný). Model se načítá líně na vlákně analýzy. Vyhlazení One Euro na všech souřadnicích.
+- **Debug:** overlay fps renderu, frekvence a doby detekce, stáří snímku; klepnutím vypne/zapne síť.

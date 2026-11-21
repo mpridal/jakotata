@@ -28,6 +28,10 @@
     <string name="show_face">Enseña tu cara</string>
     <string name="skeleton_note">La cámara llegará en el hito 2</string>
 
+    <string name="camera_permission_title">Déjame verte</string>
+    <string name="camera_permission_body">JakoTáta necesita la cámara para convertir tu cara en la de papá. Nada sale de este dispositivo.</string>
+    <string name="camera_permission_allow">Permitir cámara</string>
+
     <plurals name="seconds">
         <item quantity="one">%d segundo</item>
         <item quantity="many">%d segundos</item>

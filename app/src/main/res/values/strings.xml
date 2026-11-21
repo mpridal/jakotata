@@ -30,6 +30,10 @@
     <string name="show_face">Show your face</string>
     <string name="skeleton_note">Camera arrives in milestone 2</string>
 
+    <string name="camera_permission_title">Let me see you</string>
+    <string name="camera_permission_body">JakoTáta needs the camera to turn your face into dad\'s. Nothing leaves this device.</string>
+    <string name="camera_permission_allow">Allow camera</string>
+
     <plurals name="seconds">
         <item quantity="one">%d second</item>
         <item quantity="other">%d seconds</item>

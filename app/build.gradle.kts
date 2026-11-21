@@ -57,6 +57,8 @@ android {
     }
 
     androidResources {
+        // Model MediaPipe se čte přímo z APK (memory-map), nekomprimovat.
+        noCompress += "task"
         localeFilters += listOf("en", "cs", "es")
     }
 
@@ -76,6 +78,10 @@ dependencies {
     implementation(libs.androidx.navigation.compose)
     implementation(libs.androidx.datastore.preferences)
     implementation(libs.kotlinx.coroutines.android)
+    implementation(libs.camerax.core)
+    implementation(libs.camerax.camera2)
+    implementation(libs.camerax.lifecycle)
+    implementation(libs.mediapipe.tasks.vision)
 
     implementation(platform(libs.compose.bom))
     implementation(libs.compose.ui)

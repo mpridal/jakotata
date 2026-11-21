@@ -28,6 +28,10 @@
     <string name="show_face">Ukaž obličej</string>
     <string name="skeleton_note">Kamera přibude v milníku 2</string>
 
+    <string name="camera_permission_title">Ukaž se mi</string>
+    <string name="camera_permission_body">JakoTáta potřebuje kameru, aby z tvého obličeje udělal tátův. Nic neodchází z tohoto zařízení.</string>
+    <string name="camera_permission_allow">Povolit kameru</string>
+
     <plurals name="seconds">
         <item quantity="one">%d sekunda</item>
         <item quantity="few">%d sekundy</item>
