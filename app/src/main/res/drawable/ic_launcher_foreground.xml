@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Dočasná ikona: obličej s knírem. Finální podoba podle schváleného návrhu UI (zadání kap. 7). -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:fillColor="@color/icon_fg"
+        android:pathData="M54,30c-13,0 -22,9 -22,22c0,15 10,26 22,26s22,-11 22,-26c0,-13 -9,-22 -22,-22z" />
+    <path
+        android:fillColor="@color/icon_ink"
+        android:pathData="M45,45.5a3.5,3.5 0,1 0,0.01 0zM63,45.5a3.5,3.5 0,1 0,0.01 0z" />
+    <path
+        android:fillColor="@color/icon_ink"
+        android:pathData="M42,63c4,-4 8,-4 12,-1c4,-3 8,-3 12,1c-4,1 -8,3 -12,1c-4,2 -8,0 -12,-1z" />
+</vector>

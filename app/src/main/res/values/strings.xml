@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name" translatable="false">JakoTáta</string>
+
+    <!-- Profile -->
+    <string name="profile_default_name">Dad</string>
+    <string name="profile_switch">Switch profile</string>
+
+    <!-- Image modes (spec 2) -->
+    <string name="mode_mask">Mask</string>
+    <string name="mode_puppet">Puppet</string>
+    <string name="mode_half">Half and half</string>
+    <string name="mode_compare">Before and after</string>
+
+    <!-- Sound modes (spec 3.2) -->
+    <string name="sound_headphones">Headphones</string>
+    <string name="sound_parrot">Parrot</string>
+    <string name="sound_silent">Silent</string>
+
+    <!-- Main screen -->
+    <string name="action_record">Record video</string>
+    <string name="action_stop">Stop recording</string>
+    <string name="action_photo">Take photo</string>
+    <string name="action_switch_camera">Switch camera</string>
+    <string name="action_gallery">Gallery</string>
+    <string name="action_settings">Settings</string>
+    <string name="toggle_face">Face</string>
+    <string name="toggle_voice">Voice</string>
+    <string name="how_much_dad">How much dad</string>
+    <string name="show_face">Show your face</string>
+    <string name="skeleton_note">Camera arrives in milestone 2</string>
+
+    <plurals name="seconds">
+        <item quantity="one">%d second</item>
+        <item quantity="other">%d seconds</item>
+    </plurals>
+</resources>

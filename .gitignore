@@ -1,0 +1,28 @@
+# Gradle / Android
+.gradle/
+build/
+local.properties
+/captures/
+.externalNativeBuild/
+.cxx/
+*.apk
+*.aab
+*.jks
+*.keystore
+keystore.properties
+key.properties
+
+# Rodinné fotky a nahrávky NIKDY do Gitu (zadání kap. 8)
+testdata/local/
+*.wav
+*.mp4
+!native/voice/tests/data/*.wav
+
+# IDE / OS
+.idea/
+*.iml
+.vscode/
+.DS_Store
+Thumbs.db
+desktop.ini
+.kotlin/

@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Profil -->
+    <string name="profile_default_name">Táta</string>
+    <string name="profile_switch">Přepnout profil</string>
+
+    <!-- Režimy obrazu (zadání kap. 2) -->
+    <string name="mode_mask">Maska</string>
+    <string name="mode_puppet">Loutka</string>
+    <string name="mode_half">Půl na půl</string>
+    <string name="mode_compare">Před a po</string>
+
+    <!-- Režimy zvuku (zadání kap. 3.2) -->
+    <string name="sound_headphones">Sluchátka</string>
+    <string name="sound_parrot">Papoušek</string>
+    <string name="sound_silent">Ticho</string>
+
+    <!-- Hlavní obrazovka -->
+    <string name="action_record">Nahrát video</string>
+    <string name="action_stop">Zastavit nahrávání</string>
+    <string name="action_photo">Vyfotit</string>
+    <string name="action_switch_camera">Přepnout kameru</string>
+    <string name="action_gallery">Galerie</string>
+    <string name="action_settings">Nastavení</string>
+    <string name="toggle_face">Obličej</string>
+    <string name="toggle_voice">Hlas</string>
+    <string name="how_much_dad">Kolik táty</string>
+    <string name="show_face">Ukaž obličej</string>
+    <string name="skeleton_note">Kamera přibude v milníku 2</string>
+
+    <plurals name="seconds">
+        <item quantity="one">%d sekunda</item>
+        <item quantity="few">%d sekundy</item>
+        <item quantity="many">%d sekundy</item>
+        <item quantity="other">%d sekund</item>
+    </plurals>
+</resources>

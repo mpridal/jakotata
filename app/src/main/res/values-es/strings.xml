@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Perfil -->
+    <string name="profile_default_name">Papá</string>
+    <string name="profile_switch">Cambiar perfil</string>
+
+    <!-- Modos de imagen -->
+    <string name="mode_mask">Máscara</string>
+    <string name="mode_puppet">Marioneta</string>
+    <string name="mode_half">Mitad y mitad</string>
+    <string name="mode_compare">Antes y después</string>
+
+    <!-- Modos de sonido -->
+    <string name="sound_headphones">Auriculares</string>
+    <string name="sound_parrot">Loro</string>
+    <string name="sound_silent">Silencio</string>
+
+    <!-- Pantalla principal -->
+    <string name="action_record">Grabar vídeo</string>
+    <string name="action_stop">Detener grabación</string>
+    <string name="action_photo">Hacer foto</string>
+    <string name="action_switch_camera">Cambiar cámara</string>
+    <string name="action_gallery">Galería</string>
+    <string name="action_settings">Ajustes</string>
+    <string name="toggle_face">Cara</string>
+    <string name="toggle_voice">Voz</string>
+    <string name="how_much_dad">Cuánto papá</string>
+    <string name="show_face">Enseña tu cara</string>
+    <string name="skeleton_note">La cámara llegará en el hito 2</string>
+
+    <plurals name="seconds">
+        <item quantity="one">%d segundo</item>
+        <item quantity="many">%d segundos</item>
+        <item quantity="other">%d segundos</item>
+    </plurals>
+</resources>
