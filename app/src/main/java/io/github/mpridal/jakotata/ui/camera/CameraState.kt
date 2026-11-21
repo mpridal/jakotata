@@ -20,6 +20,8 @@ import io.github.mpridal.jakotata.core.profile.FaceProfileBuilder
 import io.github.mpridal.jakotata.core.profile.ProfileStore
 import io.github.mpridal.jakotata.core.render.CameraRenderer
 import io.github.mpridal.jakotata.core.render.MaskTopology
+import io.github.mpridal.jakotata.core.voice.VoiceEngine
+import io.github.mpridal.jakotata.core.voice.VoiceProfile
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
@@ -39,15 +41,26 @@ class CameraState(private val context: Context) {
         kidSkinSource = { tracker.kidSkin.get() },
     )
     val camera = CameraSource(context)
+    val voice = VoiceEngine(context)
     private val store = ProfileStore(context)
 
     var profile: FaceProfile? by mutableStateOf(null)
         private set
+    var voiceProfile: VoiceProfile? by mutableStateOf(null)
+        private set
 
     suspend fun loadProfile() {
-        val p = withContext(Dispatchers.IO) { store.load() }
+        val (p, v) = withContext(Dispatchers.IO) { store.load() to store.loadVoice() }
         profile = p
         renderer.setProfile(p)
+        voiceProfile = v
+        voice.setProfile(v)
+    }
+
+    suspend fun saveVoice(v: VoiceProfile, pcm: FloatArray) {
+        withContext(Dispatchers.IO) { store.saveVoice(v, pcm) }
+        voiceProfile = v
+        voice.setProfile(v)
     }
 
     /** Aktuální snímek kamery → profil (neuloží ho). */
@@ -95,6 +108,7 @@ class CameraState(private val context: Context) {
     }
 
     fun release() {
+        voice.stop()
         camera.release()
         renderer.release()
         tracker.close()

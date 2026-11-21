@@ -46,6 +46,23 @@
     <string name="dad_eyes">Ojos de papá</string>
     <string name="action_close">Cerrar</string>
 
+    <string name="parrot_listening">Escucho… di una frase</string>
+    <string name="parrot_recording">Grabando…</string>
+    <string name="parrot_playing">Papá dice…</string>
+    <string name="profile_record_voice">Grabar la voz de papá</string>
+    <string name="voice_record_title">La voz de papá</string>
+    <string name="voice_record_hint">Lee el texto en voz alta en una habitación tranquila, a ritmo normal, 45–60 segundos. Que la barra no llegue al rojo.</string>
+    <string name="voice_prompt">Hola, soy papá. Esta mañana me preparé un café, abrí la ventana y escuché cantar a los pájaros. Luego saqué al perro a pasear alrededor del estanque. El agua estaba tranquila y los patos flotaban en la superficie. Cerca del bosque encontramos al vecino con una cesta llena de setas. Me dijo que este año hay muchísimas. En casa preparé un bizcocho, porque por la tarde vienen los abuelos. Por la noche jugaremos a un juego de mesa, nos reiremos mucho y nos contaremos todo lo que hicimos esta semana. Quizás el domingo vayamos al zoo a ver los elefantes, los búhos y los monos ruidosos. Hasta pronto, cuidaos mucho y no olvidéis sonreír.</string>
+    <string name="voice_start">Empezar a grabar</string>
+    <string name="voice_stop">Listo</string>
+    <string name="voice_again">Grabar de nuevo</string>
+    <string name="voice_result">Tu voz: %1$d Hz</string>
+    <string name="voice_saved">Guardado. JakoTáta ya conoce la voz de papá.</string>
+    <string name="voice_err_little">Muy poca voz: lee al menos 20 segundos.</string>
+    <string name="voice_err_clip">Demasiado alto: aleja un poco el teléfono.</string>
+    <string name="voice_err_noisy">Hay demasiado ruido: busca un lugar más tranquilo.</string>
+    <string name="latency_test">Latencia</string>
+
     <plurals name="seconds">
         <item quantity="one">%d segundo</item>
         <item quantity="many">%d segundos</item>

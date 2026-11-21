@@ -46,6 +46,23 @@
     <string name="dad_eyes">Tátovy oči</string>
     <string name="action_close">Zavřít</string>
 
+    <string name="parrot_listening">Poslouchám… řekni větu</string>
+    <string name="parrot_recording">Nahrávám…</string>
+    <string name="parrot_playing">Táta říká…</string>
+    <string name="profile_record_voice">Nahrát hlas táty</string>
+    <string name="voice_record_title">Hlas táty</string>
+    <string name="voice_record_hint">Přečti nahlas text v tiché místnosti, normálním tempem, 45–60 sekund. Ukazatel ať nejde do červené.</string>
+    <string name="voice_prompt">Ahoj, tady táta. Dnes ráno jsem si uvařil kafe, otevřel okno a poslouchal, jak venku zpívají ptáci. Potom jsem šel s pejskem na procházku kolem rybníka. Voda byla klidná a na hladině plavaly kachny. U lesa jsme potkali souseda, který nesl košík plný hub. Řekl mi, že letos rostou hříbky, bedly i kozáci. Doma jsem upekl bábovku, protože k nám odpoledne přijede babička s dědou. Večer si zahrajeme deskovou hru, budeme se smát a vyprávět si, co jsme za celý týden zažili. Možná v neděli pojedeme do zoo a podíváme se na slony, sovy a hlučné opice. Uvidíme se brzy, mějte se krásně a nezapomeňte se usmívat.</string>
+    <string name="voice_start">Začít nahrávat</string>
+    <string name="voice_stop">Hotovo</string>
+    <string name="voice_again">Nahrát znovu</string>
+    <string name="voice_result">Tvůj hlas: %1$d Hz</string>
+    <string name="voice_saved">Uloženo. JakoTáta teď zná tátův hlas.</string>
+    <string name="voice_err_little">Málo řeči – čti aspoň 20 sekund.</string>
+    <string name="voice_err_clip">Moc nahlas – dej telefon kousek dál.</string>
+    <string name="voice_err_noisy">Kolem je moc hluku – najdi tišší místo.</string>
+    <string name="latency_test">Latence</string>
+
     <plurals name="seconds">
         <item quantity="one">%d sekunda</item>
         <item quantity="few">%d sekundy</item>

@@ -84,3 +84,22 @@ na nový telefon (zadání kap. 8). `INTERNET` jen pro kontrolu aktualizací.
   a nosu, bez vousů; vyhlazeno v čase). Přenos stínování: rozmazaný jas kamery pod maskou vůči
   průměrnému jasu kůže dcery (síla 0,55, omezení 0,75–1,25).
 - **Zeslábnutí:** podle odvrácení hlavy z transformační matice – plná do 25°, nulová ve 40°.
+
+## Hlas (milník 4)
+
+- **C++ jádro** (`native/voice`, bez Androidu, testované GoogleTestem): YIN (F0, decimace na 12 kHz),
+  LPC formanty F1–F3 (vrcholy obálky), banka 10 pásem (100 Hz–6,3 kHz) pro dlouhodobé spektrum
+  a ekvalizér ±12 dB, VAD s adaptivním prahem šumu (konec věty po 0,6 s ticha), gate/kompresor/limiter.
+- **Převod:** Signalsmith Stretch (MIT, `third_party/`) – posun výšky = medián táty / medián dcery
+  (−18 až 0 půltónů), formanty = průměr poměrů F1–F3 (0,70–1,00), obojí škálováno „Kolik táty“.
+  EQ se průběžně adaptuje: tátovo LTAS z profilu − LTAS převedeného hlasu.
+  Živý režim: blok 25 ms (latence algoritmu < 50 ms); Papoušek: výchozí preset (kvalitnější).
+- **Engine:** Oboe `FullDuplexStream`, float mono 48 kHz, LowLatency/Exclusive, vstup `VoicePerformance`
+  (vestavěný mikrofon, nikdy SCO). Režimy: Sluchátka (živě), Papoušek (věta → převod na pracovním
+  vlákně → přehrání, mikrofon během přehrávání ignorován + 250 ms doznění), Ticho.
+  Start/stop streamů na vlastním vlákně (otevření trvá stovky ms, nesmí blokovat UI).
+- **Režim podle výstupu** (`SoundModes`): živý hlas jen s kabelovými/USB sluchátky, jinak Papoušek.
+- **Profil hlasu:** AudioRecord 48 kHz (`VOICE_RECOGNITION`), max 60 s, analýza v C++
+  (medián a rozsah F0, formanty, spektrum, ořez, odstup od šumu), kontrola kvality, `voice.json` + `voice.wav`.
+- **Testy C++ lokálně** (Windows bez hostitelského překladače): NDK + GoogleTest z NDK, spuštění na
+  zařízení/emulátoru přes adb (`-DJAKOTATA_DEVICE_TESTS=ON -DJAKOTATA_GTEST_DIR=<NDK>/sources/third_party/googletest`).

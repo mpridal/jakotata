@@ -54,6 +54,7 @@ android {
     buildFeatures {
         compose = true
         buildConfig = true
+        prefab = true
     }
 
     androidResources {
@@ -82,6 +83,7 @@ dependencies {
     implementation(libs.camerax.camera2)
     implementation(libs.camerax.lifecycle)
     implementation(libs.mediapipe.tasks.vision)
+    implementation(libs.oboe)
 
     implementation(platform(libs.compose.bom))
     implementation(libs.compose.ui)

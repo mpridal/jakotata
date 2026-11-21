@@ -29,3 +29,5 @@ Do repozitáře nikdy nepatří rodinné fotky ani nahrávky. Testovací data je
 ## Licence třetích stran
 
 Písma Nunito a Baloo 2 – SIL Open Font License (`app/src/main/assets/licenses/`).
+Signalsmith Stretch a Signalsmith Linear – MIT (`native/voice/third_party/*/LICENSE.txt`).
+MediaPipe (model `face_landmarker.task`), CameraX, Oboe – Apache 2.0.

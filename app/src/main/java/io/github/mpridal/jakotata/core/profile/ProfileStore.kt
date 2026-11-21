@@ -5,6 +5,8 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.util.Log
 import io.github.mpridal.jakotata.core.face.SkinStats
+import io.github.mpridal.jakotata.core.voice.VoiceProfile
+import io.github.mpridal.jakotata.core.voice.VoiceProfileRecorder
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
@@ -40,9 +42,9 @@ class ProfileStore(context: Context) {
         null
     }
 
-    /** Uloží profil; předchozí obličej přesune do koše. */
+    /** Uloží obličej; předchozí obličej přesune do koše. */
     fun save(profile: FaceProfile) {
-        moveToTrash()
+        trashFiles(FACE_IMAGE, FACE_JSON)
         dir.mkdirs()
         File(dir, FACE_IMAGE).outputStream().use { profile.texture.compress(Bitmap.CompressFormat.JPEG, 92, it) }
         val o = JSONObject()
@@ -54,12 +56,27 @@ class ProfileStore(context: Context) {
         File(dir, FACE_JSON).writeText(o.toString())
     }
 
-    /** Přesune aktuální profil do koše (obnovitelné). */
-    fun moveToTrash() {
-        if (!dir.exists() || dir.listFiles().isNullOrEmpty()) return
-        trash.mkdirs()
-        val target = File(trash, "${System.currentTimeMillis()}-$DEFAULT_ID")
-        if (!dir.renameTo(target)) Log.w(TAG, "Move to trash failed: $dir")
+    fun loadVoice(): VoiceProfile? = try {
+        File(dir, VOICE_JSON).takeIf { it.exists() }?.let { VoiceProfile.fromJson(JSONObject(it.readText())) }
+    } catch (e: Exception) {
+        Log.w(TAG, "Voice load failed", e)
+        null
+    }
+
+    /** Uloží hlas (JSON + původní WAV); předchozí hlas přesune do koše. */
+    fun saveVoice(voice: VoiceProfile, pcm: FloatArray) {
+        trashFiles(VOICE_JSON, VOICE_WAV)
+        dir.mkdirs()
+        VoiceProfileRecorder.writeWav(File(dir, VOICE_WAV), pcm)
+        File(dir, VOICE_JSON).writeText(voice.toJson().toString())
+    }
+
+    /** Přesune soubory profilu do koše `files/trash/<čas>-default/` (obnovitelné, nic se nemaže). */
+    private fun trashFiles(vararg names: String) {
+        val existing = names.map { File(dir, it) }.filter { it.exists() }
+        if (existing.isEmpty()) return
+        val target = File(trash, "${System.currentTimeMillis()}-$DEFAULT_ID").apply { mkdirs() }
+        for (f in existing) if (!f.renameTo(File(target, f.name))) Log.w(TAG, "Move to trash failed: $f")
     }
 
     private fun JSONArray.toFloatArray() = FloatArray(length()) { getDouble(it).toFloat() }
@@ -69,5 +86,7 @@ class ProfileStore(context: Context) {
         const val DEFAULT_ID = "default"
         const val FACE_IMAGE = "face.jpg"
         const val FACE_JSON = "face.json"
+        const val VOICE_JSON = "voice.json"
+        const val VOICE_WAV = "voice.wav"
     }
 }

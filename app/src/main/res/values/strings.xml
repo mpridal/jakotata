@@ -48,6 +48,23 @@
     <string name="dad_eyes">Dad\'s eyes</string>
     <string name="action_close">Close</string>
 
+    <string name="parrot_listening">Listening… say a sentence</string>
+    <string name="parrot_recording">Recording…</string>
+    <string name="parrot_playing">Dad says…</string>
+    <string name="profile_record_voice">Record dad\'s voice</string>
+    <string name="voice_record_title">Dad\'s voice</string>
+    <string name="voice_record_hint">Read the text aloud in a quiet room, at a normal pace, 45–60 seconds. Keep the bar out of the red.</string>
+    <string name="voice_prompt">Hi, it\'s dad here. This morning I made a cup of coffee, opened the window and listened to the birds singing outside. Then I took the dog for a walk around the pond. The water was calm and ducks were floating on the surface. Near the forest we met our neighbour carrying a basket full of mushrooms. He told me that this year there are plenty of them everywhere. At home I baked a cake, because grandma and grandpa are coming over in the afternoon. In the evening we will play a board game, laugh a lot and tell each other about everything we did this week. Who knows, maybe we will even go to the zoo on Sunday and look at the elephants, the owls and the noisy monkeys. See you soon, take care, and don\'t forget to smile.</string>
+    <string name="voice_start">Start recording</string>
+    <string name="voice_stop">Stop</string>
+    <string name="voice_again">Record again</string>
+    <string name="voice_result">Your voice: %1$d Hz</string>
+    <string name="voice_saved">Saved. Now JakoTáta knows dad\'s voice.</string>
+    <string name="voice_err_little">Too little speech – read at least 20 seconds.</string>
+    <string name="voice_err_clip">Too loud – move the phone a bit further away.</string>
+    <string name="voice_err_noisy">Too much noise around – find a quieter place.</string>
+    <string name="latency_test">Latency</string>
+
     <plurals name="seconds">
         <item quantity="one">%d second</item>
         <item quantity="other">%d seconds</item>

@@ -69,7 +69,16 @@ import io.github.mpridal.jakotata.ui.components.GlassBox
 import io.github.mpridal.jakotata.ui.components.LocalHazeState
 import io.github.mpridal.jakotata.ui.theme.JakoDimens
 import io.github.mpridal.jakotata.ui.theme.JakoTheme
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.withContext
+import androidx.compose.foundation.layout.height
+import androidx.compose.runtime.DisposableEffect
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import io.github.mpridal.jakotata.core.voice.ParrotState
+import io.github.mpridal.jakotata.core.voice.SoundMode
 import kotlinx.coroutines.launch
 
 /**
@@ -79,11 +88,15 @@ import kotlinx.coroutines.launch
 @Composable
 fun MainScreen() {
     val context = LocalContext.current
-    var hasCamera by remember {
-        mutableStateOf(ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED)
+    fun granted(p: String) = ContextCompat.checkSelfPermission(context, p) == PackageManager.PERMISSION_GRANTED
+    var hasCamera by remember { mutableStateOf(granted(Manifest.permission.CAMERA)) }
+    var hasMic by remember { mutableStateOf(granted(Manifest.permission.RECORD_AUDIO)) }
+    val launcher = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
+        hasCamera = granted(Manifest.permission.CAMERA)
+        hasMic = granted(Manifest.permission.RECORD_AUDIO)
     }
-    val launcher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { hasCamera = it }
-    LaunchedEffect(Unit) { if (!hasCamera) launcher.launch(Manifest.permission.CAMERA) }
+    val permissions = arrayOf(Manifest.permission.CAMERA, Manifest.permission.RECORD_AUDIO)
+    LaunchedEffect(Unit) { if (!hasCamera || !hasMic) launcher.launch(permissions) }
 
     val state = rememberCameraState()
     LaunchedEffect(state) { state.loadProfile() }
@@ -91,11 +104,30 @@ fun MainScreen() {
     var front by rememberSaveable { mutableStateOf(true) }
     var showMesh by rememberSaveable { mutableStateOf(false) }
     var maskOn by rememberSaveable { mutableStateOf(true) }
+    var voiceOn by rememberSaveable { mutableStateOf(true) }
     var amount by rememberSaveable { mutableFloatStateOf(0.8f) }
     var dadEyes by rememberSaveable { mutableStateOf(false) }
     var sheetOpen by rememberSaveable { mutableStateOf(false) }
+    var voiceSheetOpen by rememberSaveable { mutableStateOf(false) }
     val hazeState = remember { HazeState() }
     val c = JakoTheme.colors
+
+    // Převod hlasu běží, když je obrazovka vidět a je povolený mikrofon.
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner, hasMic) {
+        val observer = LifecycleEventObserver { _, event ->
+            when (event) {
+                Lifecycle.Event.ON_RESUME -> if (hasMic) state.voice.start()
+                Lifecycle.Event.ON_PAUSE -> state.voice.stop()
+                else -> Unit
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        if (hasMic && lifecycleOwner.lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) state.voice.start()
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer); state.voice.stop() }
+    }
+    LaunchedEffect(voiceOn) { state.voice.setVoiceEnabled(voiceOn) }
+    LaunchedEffect(amount) { state.voice.setAmount(amount) }
 
     Box(Modifier.fillMaxSize().background(c.root)) {
         Box(Modifier.fillMaxSize().hazeSource(hazeState)) {
@@ -108,21 +140,85 @@ fun MainScreen() {
                 Modifier.fillMaxSize().safeDrawingPadding().padding(JakoDimens.gutter),
                 verticalArrangement = Arrangement.SpaceBetween,
             ) {
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.Top) {
-                    ProfileChip(state) { sheetOpen = true }
-                    if (BuildConfig.DEBUG) DebugOverlay(showMesh) { showMesh = !showMesh }
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.Top) {
+                        ProfileChip(state) { sheetOpen = true }
+                        if (hasMic) SoundModeChip(state)
+                    }
+                    if (hasMic && voiceOn) ParrotPill(state)
+                    if (BuildConfig.DEBUG) DebugOverlay(state, showMesh) { showMesh = !showMesh }
                 }
                 when {
-                    !hasCamera -> PermissionCard { launcher.launch(Manifest.permission.CAMERA) }
-                    sheetOpen || state.profile == null -> ProfileSheet(state, canClose = state.profile != null) { sheetOpen = false }
+                    !hasCamera || !hasMic -> PermissionCard { launcher.launch(permissions) }
+                    voiceSheetOpen -> VoiceSheet(state) { voiceSheetOpen = false }
+                    sheetOpen || state.profile == null -> ProfileSheet(
+                        state, canClose = state.profile != null,
+                        onRecordVoice = { sheetOpen = false; voiceSheetOpen = true },
+                    ) { sheetOpen = false }
                     else -> Spacer(Modifier)
                 }
                 ControlPanel(
                     maskOn = maskOn, onMaskOn = { maskOn = it },
+                    voiceOn = voiceOn, onVoiceOn = { voiceOn = it },
                     amount = amount, onAmount = { amount = it },
                     dadEyes = dadEyes, onDadEyes = { dadEyes = it },
                     onSwitchCamera = { front = !front },
                 )
+            }
+        }
+    }
+}
+
+/** Ikona režimu zvuku (zadání kap. 6.3): klepnutím Papoušek → (Sluchátka) → Ticho. */
+@Composable
+private fun SoundModeChip(state: CameraState) {
+    val mode by state.voice.mode.collectAsStateWithLifecycle()
+    val label = when (mode) {
+        SoundMode.PARROT -> R.string.sound_parrot
+        SoundMode.HEADPHONES -> R.string.sound_headphones
+        SoundMode.SILENT -> R.string.sound_silent
+    }
+    GlassBox(
+        Modifier.heightIn(min = JakoDimens.pill).clickable(role = Role.Button) { state.voice.cycleMode() },
+        shape = RoundedCornerShape(50),
+    ) {
+        Text(
+            stringResource(label),
+            modifier = Modifier.padding(horizontal = 18.dp, vertical = 14.dp),
+            style = MaterialTheme.typography.labelLarge,
+            color = JakoTheme.colors.onGlass,
+        )
+    }
+}
+
+/** Stav Papouška: poslouchám / nahrávám / táta říká (zadání kap. 6.3, návrh UI). */
+@Composable
+private fun ParrotPill(state: CameraState) {
+    val mode by state.voice.mode.collectAsStateWithLifecycle()
+    if (mode != SoundMode.PARROT) return
+    var parrot by remember { mutableStateOf(ParrotState.LISTENING) }
+    var level by remember { mutableFloatStateOf(0f) }
+    LaunchedEffect(Unit) {
+        while (true) { parrot = state.voice.parrotState(); level = state.voice.inputLevel(); delay(80) }
+    }
+    val text = when (parrot) {
+        ParrotState.LISTENING -> R.string.parrot_listening
+        ParrotState.RECORDING -> R.string.parrot_recording
+        ParrotState.PROCESSING, ParrotState.PLAYING -> R.string.parrot_playing
+    }
+    val c = JakoTheme.colors
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
+        GlassBox(shape = RoundedCornerShape(50)) {
+            Row(Modifier.padding(horizontal = 16.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+                val bars = ((20f * kotlin.math.log10(level.coerceAtLeast(1e-5f)) + 60f) / 12f).toInt().coerceIn(0, 5)
+                repeat(5) { i ->
+                    Box(
+                        Modifier.padding(end = 3.dp).width(4.dp).height((8 + i * 3).dp).clip(RoundedCornerShape(2.dp))
+                            .background(if (i < bars || parrot == ParrotState.PLAYING) c.accentStart else c.onGlass.copy(alpha = 0.25f)),
+                    )
+                }
+                Spacer(Modifier.width(8.dp))
+                Text(stringResource(text), style = MaterialTheme.typography.labelLarge, color = c.onGlass)
             }
         }
     }
@@ -153,7 +249,7 @@ private fun ProfileChip(state: CameraState, onClick: () -> Unit) {
 
 /** Vyfocení táty (zadání kap. 6.2 – zjednodušeně: souhlas + čelní fotka z kamery nebo galerie). */
 @Composable
-private fun ProfileSheet(state: CameraState, canClose: Boolean, onClose: () -> Unit) {
+private fun ProfileSheet(state: CameraState, canClose: Boolean, onRecordVoice: () -> Unit, onClose: () -> Unit) {
     val c = JakoTheme.colors
     val scope = rememberCoroutineScope()
     var consent by rememberSaveable { mutableStateOf(false) }
@@ -204,13 +300,17 @@ private fun ProfileSheet(state: CameraState, canClose: Boolean, onClose: () -> U
                 else -> message
             }
             if (status != null) Text(stringResource(status), style = MaterialTheme.typography.bodyMedium, color = c.onGlass)
-            if (canClose) PillButton(stringResource(R.string.action_close), primary = false, enabled = true, onClick = onClose)
+            if (canClose) {
+                val voiceLabel = state.voiceProfile?.let { stringResource(R.string.voice_result, it.medianF0.toInt()) }
+                PillButton(stringResource(R.string.profile_record_voice) + (voiceLabel?.let { " · $it" } ?: ""), primary = false, enabled = true, onClick = onRecordVoice)
+                PillButton(stringResource(R.string.action_close), primary = false, enabled = true, onClick = onClose)
+            }
         }
     }
 }
 
 @Composable
-private fun PillButton(text: String, primary: Boolean, enabled: Boolean, onClick: () -> Unit) {
+internal fun PillButton(text: String, primary: Boolean, enabled: Boolean, onClick: () -> Unit) {
     val c = JakoTheme.colors
     val bg = if (primary) c.accentStart else c.onGlass.copy(alpha = 0.12f)
     Box(
@@ -228,6 +328,7 @@ private fun PillButton(text: String, primary: Boolean, enabled: Boolean, onClick
 @Composable
 private fun ControlPanel(
     maskOn: Boolean, onMaskOn: (Boolean) -> Unit,
+    voiceOn: Boolean, onVoiceOn: (Boolean) -> Unit,
     amount: Float, onAmount: (Float) -> Unit,
     dadEyes: Boolean, onDadEyes: (Boolean) -> Unit,
     onSwitchCamera: () -> Unit,
@@ -239,6 +340,7 @@ private fun ControlPanel(
         Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 ToggleChip(stringResource(R.string.toggle_face), maskOn, onMaskOn)
+                ToggleChip(stringResource(R.string.toggle_voice), voiceOn, onVoiceOn)
                 ToggleChip(stringResource(R.string.dad_eyes), dadEyes, onDadEyes)
                 Spacer(Modifier.weight(1f))
                 Text("${(amount * 100).toInt()} %", style = MaterialTheme.typography.titleMedium, color = c.onGlass)
@@ -285,22 +387,42 @@ private fun ToggleChip(text: String, checked: Boolean, onChange: (Boolean) -> Un
 }
 
 @Composable
-private fun DebugOverlay(showMesh: Boolean, onToggleMesh: () -> Unit) {
+private fun DebugOverlay(state: CameraState, showMesh: Boolean, onToggleMesh: () -> Unit) {
+    val scope = rememberCoroutineScope()
+    var voiceInfo by remember { mutableStateOf("") }
+    var roundTrip by remember { mutableStateOf("–") }
     LaunchedEffect(Unit) {
-        while (true) { delay(500); PerfStats.sample() }
+        while (true) {
+            delay(500)
+            PerfStats.sample()
+            voiceInfo = "kid %.0f Hz · live %.0f ms".format(state.voice.kidF0(), state.voice.liveLatencyMs())
+        }
     }
     val s by PerfStats.snapshot.collectAsStateWithLifecycle()
-    GlassBox(Modifier.clickable(onClick = onToggleMesh), shape = RoundedCornerShape(18.dp)) {
-        Text(
-            "%.0f fps · face %.0f/s %.1f ms %s\nframe age %.0f ms · faces %d · mesh %s".format(
-                s.renderFps, s.detectFps, s.detectMs, s.delegate, s.frameAgeMs, s.faces, if (showMesh) "on" else "off",
-            ),
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-            fontFamily = FontFamily.Monospace,
-            fontSize = 11.sp,
-            lineHeight = 14.sp,
-            color = JakoTheme.colors.onGlass,
-        )
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        GlassBox(Modifier.clickable(onClick = onToggleMesh), shape = RoundedCornerShape(18.dp)) {
+            Text(
+                "%.0f fps · face %.0f/s %.1f ms %s\nframe age %.0f ms · faces %d · mesh %s\n%s · rt %s".format(
+                    s.renderFps, s.detectFps, s.detectMs, s.delegate, s.frameAgeMs, s.faces, if (showMesh) "on" else "off",
+                    voiceInfo, roundTrip,
+                ),
+                modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                fontFamily = FontFamily.Monospace,
+                fontSize = 11.sp,
+                lineHeight = 14.sp,
+                color = JakoTheme.colors.onGlass,
+            )
+        }
+        // Test round-trip latence (zadání kap. 3.3): cvaknutí z reproduktoru → mikrofon.
+        GlassBox(
+            Modifier.clickable {
+                roundTrip = "…"
+                scope.launch { roundTrip = withContext(Dispatchers.Default) { state.voice.measureRoundTripMs() }.let { if (it < 0) "?" else "$it ms" } }
+            },
+            shape = RoundedCornerShape(18.dp),
+        ) {
+            Text(stringResource(R.string.latency_test), modifier = Modifier.padding(12.dp), fontSize = 11.sp, color = JakoTheme.colors.onGlass)
+        }
     }
 }
 
