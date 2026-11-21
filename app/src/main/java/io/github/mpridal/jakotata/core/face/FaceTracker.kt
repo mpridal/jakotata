@@ -47,6 +47,18 @@ class FaceTracker(context: Context, private val maxFaces: Int = 1) : ImageAnalys
         .flatMap { listOf(it.start(), it.end()) }
         .toIntArray()
 
+    /** Trojúhelníky sítě (indexy vrcholů po trojicích) pro vykreslení masky. */
+    val meshTriangles: IntArray = FaceTopology.trianglesFromEdges(meshEdges)
+    val ovalLoop: IntArray = FaceTopology.loopFromEdges(edges(FaceLandmarker.FACE_LANDMARKS_FACE_OVAL))
+    val leftEyeLoop: IntArray = FaceTopology.loopFromEdges(edges(FaceLandmarker.FACE_LANDMARKS_LEFT_EYE))
+    val rightEyeLoop: IntArray = FaceTopology.loopFromEdges(edges(FaceLandmarker.FACE_LANDMARKS_RIGHT_EYE))
+
+    /** Barva kůže dcery (vyhlazená v čase) pro barevné sladění masky. */
+    val kidSkin = AtomicReference<SkinStats?>(null)
+    private val pendingBitmaps = ConcurrentHashMap<Long, Bitmap>()
+    private var pixelBuffer = IntArray(0)
+    private var skinFrame = 0
+
     private val smoothers = Array(2) { LandmarkSmoother() }
     private val startTimes = ConcurrentHashMap<Long, Long>()
     private val aspects = ConcurrentHashMap<Long, Float>()
@@ -97,6 +109,7 @@ class FaceTracker(context: Context, private val maxFaces: Int = 1) : ImageAnalys
                 Bitmap.createBitmap(raw, 0, 0, raw.width, raw.height, Matrix().apply { postRotate(rot.toFloat()) }, false)
             } else raw
             aspects[ts] = bitmap.width.toFloat() / bitmap.height
+            pendingBitmaps[ts] = bitmap
             PerfStats.analysisSize = "${it.width}x${it.height}r$rot"
             synchronized(lock) {
                 if (closed) return
@@ -111,6 +124,8 @@ class FaceTracker(context: Context, private val maxFaces: Int = 1) : ImageAnalys
         val now = System.nanoTime()
         val started = startTimes.remove(result.timestampMs()) ?: now
         val aspect = aspects.remove(result.timestampMs()) ?: 0f
+        val bitmap = pendingBitmaps.remove(result.timestampMs())
+        pendingBitmaps.keys.filter { it < result.timestampMs() }.forEach { pendingBitmaps.remove(it) }
         val faces = result.faceLandmarks().take(smoothers.size).mapIndexed { i, landmarks ->
             val coords = FloatArray(landmarks.size * 3)
             landmarks.forEachIndexed { j, p ->
@@ -125,8 +140,22 @@ class FaceTracker(context: Context, private val maxFaces: Int = 1) : ImageAnalys
         }
         val matrices = result.facialTransformationMatrixes().orElse(emptyList())
         latest.set(FaceFrame(faces, blendshapes, matrices, now, aspect))
+        // Barva kůže stačí každý 3. snímek (šetří CPU), vyhlazená klouzavým průměrem.
+        if (bitmap != null && faces.isNotEmpty() && skinFrame++ % 3 == 0) updateKidSkin(bitmap, faces[0])
         PerfStats.onDetection(now - started, faces.size)
     }
+
+    private fun updateKidSkin(bitmap: Bitmap, coords: FloatArray) {
+        val n = bitmap.width * bitmap.height
+        if (pixelBuffer.size != n) pixelBuffer = IntArray(n)
+        bitmap.getPixels(pixelBuffer, 0, bitmap.width, 0, 0, bitmap.width, bitmap.height)
+        val s = SkinColor.stats(pixelBuffer, bitmap.width, bitmap.height, coords, FaceTopology.SKIN_SAMPLES) ?: return
+        val prev = kidSkin.get()
+        kidSkin.set(prev?.blend(s, 0.2f) ?: s)
+    }
+
+    private fun edges(connections: Collection<com.google.mediapipe.tasks.components.containers.Connection>): IntArray =
+        connections.flatMap { listOf(it.start(), it.end()) }.toIntArray()
 
     override fun close() {
         synchronized(lock) {

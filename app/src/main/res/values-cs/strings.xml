@@ -26,11 +26,25 @@
     <string name="toggle_voice">Hlas</string>
     <string name="how_much_dad">Kolik táty</string>
     <string name="show_face">Ukaž obličej</string>
-    <string name="skeleton_note">Kamera přibude v milníku 2</string>
 
     <string name="camera_permission_title">Ukaž se mi</string>
     <string name="camera_permission_body">JakoTáta potřebuje kameru, aby z tvého obličeje udělal tátův. Nic neodchází z tohoto zařízení.</string>
     <string name="camera_permission_allow">Povolit kameru</string>
+
+    <string name="profile_sheet_title">Kdo bude táta?</string>
+    <string name="profile_capture_hint">Namiř kameru na tátův obličej: rovně zepředu, neutrální výraz, zavřená pusa, dobré světlo. Nebo vyber čelní fotku.</string>
+    <string name="profile_consent">Jsem to já, nebo mám souhlas této osoby</string>
+    <string name="profile_consent_required">Nejdřív zaškrtni souhlas.</string>
+    <string name="profile_capture_camera">Vyfotit kamerou</string>
+    <string name="profile_pick_gallery">Vybrat fotku z galerie</string>
+    <string name="profile_processing">Zpracovávám…</string>
+    <string name="profile_saved">Hotovo! Táta je uložený.</string>
+    <string name="profile_err_no_face">Nevidím obličej. Zkus to znovu.</string>
+    <string name="profile_err_not_frontal">Obličej se musí dívat rovně do kamery.</string>
+    <string name="profile_err_eyes">Oči musí být otevřené.</string>
+    <string name="profile_err_mouth">Pusa musí být zavřená.</string>
+    <string name="dad_eyes">Tátovy oči</string>
+    <string name="action_close">Zavřít</string>
 
     <plurals name="seconds">
         <item quantity="one">%d sekunda</item>

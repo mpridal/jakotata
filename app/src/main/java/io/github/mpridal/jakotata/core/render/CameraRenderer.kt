@@ -1,5 +1,7 @@
 package io.github.mpridal.jakotata.core.render
 
+import android.graphics.Bitmap
+import android.graphics.Matrix
 import android.graphics.SurfaceTexture
 import android.opengl.EGL14
 import android.opengl.EGLConfig
@@ -17,6 +19,11 @@ import androidx.camera.core.Preview
 import androidx.camera.core.SurfaceRequest
 import io.github.mpridal.jakotata.core.PerfStats
 import io.github.mpridal.jakotata.core.face.FaceFrame
+import io.github.mpridal.jakotata.core.face.FaceTopology
+import io.github.mpridal.jakotata.core.face.SkinStats
+import io.github.mpridal.jakotata.core.profile.FaceProfile
+import java.nio.ByteBuffer
+import java.nio.ByteOrder
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.Executor
 
@@ -30,9 +37,19 @@ import java.util.concurrent.Executor
 class CameraRenderer(
     private val faceSource: () -> FaceFrame?,
     private val meshEdges: IntArray,
+    maskTopology: MaskTopology,
+    private val kidSkinSource: () -> SkinStats?,
 ) {
     @Volatile var mirror: Boolean = true
     @Volatile var showMesh: Boolean = true
+    /** Přepínač Obličej (zadání kap. 6.3). */
+    @Volatile var maskEnabled: Boolean = true
+    /** „Kolik táty“ 0–1. */
+    @Volatile var maskAmount: Float = 0.8f
+    /** Volba „Tátovy oči“: díry pro oči zavřené. */
+    @Volatile var dadEyes: Boolean = false
+
+    private val mask = MaskPass(maskTopology)
 
     private val thread = HandlerThread("JakoGL").apply { start() }
     private val handler = Handler(thread.looper)
@@ -130,6 +147,7 @@ class CameraRenderer(
         EGL14.eglMakeCurrent(eglDisplay, pbuffer, pbuffer, eglContext)
         cameraProgram = GlUtil.program(CAMERA_VS, CAMERA_FS)
         meshProgram = GlUtil.program(MESH_VS, MESH_FS)
+        mask.init()
     }
 
     private fun onSurfaceRequest(request: SurfaceRequest) {
@@ -208,6 +226,7 @@ class CameraRenderer(
         GLES30.glClear(GLES30.GL_COLOR_BUFFER_BIT)
         val mapping = DisplayMapping.cover(bufferW, bufferH, rotation, viewW, viewH, mirror)
         if (st != null && hasFrame) drawCamera(mapping)
+        if (st != null && hasFrame && maskEnabled) drawMask(mapping)
         if (showMesh) drawMesh(mapping)
         EGL14.eglSwapBuffers(eglDisplay, window)
 
@@ -238,13 +257,63 @@ class CameraRenderer(
         GLES30.glDisableVertexAttribArray(loc)
     }
 
+    /** Nastaví (nebo zruší) obličej táty pro masku. */
+    fun setProfile(profile: FaceProfile?) = handler.post { makeCurrent(); mask.setProfile(profile) }
+
+    /**
+     * Narovnaný snímek kamery bez zrcadlení v rozlišení náhledu (pro fotku táty do profilu).
+     * Callback běží na GL vlákně; null, když ještě není snímek.
+     */
+    fun captureFrame(callback: (Bitmap?) -> Unit) = handler.post {
+        if (!hasFrame || bufferW == 0) { callback(null); return@post }
+        makeCurrent()
+        val swap = rotation % 180 != 0
+        val w = if (swap) bufferH else bufferW
+        val h = if (swap) bufferW else bufferH
+        val fbo = IntArray(1); val tex = IntArray(1)
+        GLES30.glGenTextures(1, tex, 0)
+        GLES30.glBindTexture(GLES30.GL_TEXTURE_2D, tex[0])
+        GLES30.glTexImage2D(GLES30.GL_TEXTURE_2D, 0, GLES30.GL_RGBA, w, h, 0, GLES30.GL_RGBA, GLES30.GL_UNSIGNED_BYTE, null)
+        GLES30.glGenFramebuffers(1, fbo, 0)
+        GLES30.glBindFramebuffer(GLES30.GL_FRAMEBUFFER, fbo[0])
+        GLES30.glFramebufferTexture2D(GLES30.GL_FRAMEBUFFER, GLES30.GL_COLOR_ATTACHMENT0, GLES30.GL_TEXTURE_2D, tex[0], 0)
+        GLES30.glViewport(0, 0, w, h)
+        drawCamera(DisplayMapping(1f, 1f, mirror = false))
+        val buf = ByteBuffer.allocateDirect(w * h * 4).order(ByteOrder.nativeOrder())
+        GLES30.glReadPixels(0, 0, w, h, GLES30.GL_RGBA, GLES30.GL_UNSIGNED_BYTE, buf)
+        GLES30.glBindFramebuffer(GLES30.GL_FRAMEBUFFER, 0)
+        GLES30.glDeleteFramebuffers(1, fbo, 0)
+        GLES30.glDeleteTextures(1, tex, 0)
+        val raw = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888).apply { buf.position(0); copyPixelsFromBuffer(buf) }
+        // glReadPixels čte odspodu nahoru.
+        val upright = Bitmap.createBitmap(raw, 0, 0, w, h, Matrix().apply { postScale(1f, -1f) }, false)
+        callback(upright)
+    }
+
+    private fun drawMask(m: DisplayMapping) {
+        if (!mask.hasProfile) return
+        val frame = faceSource() ?: return
+        val face = frame.faces.firstOrNull() ?: return
+        val (fx, fy) = analysisCorrection(frame)
+        val tilt = frame.matrices.firstOrNull()?.let { FaceTopology.headTiltDegrees(it) } ?: 0f
+        mask.draw(
+            face, fx, fy, tilt, m, cameraMirror = m.mirror != textureMirrored,
+            cameraTex = cameraTexId, texMatrix = texMatrix, shaderRotation = shaderRotation,
+            kidSkin = kidSkinSource(), amount = maskAmount, dadEyes = dadEyes,
+        )
+    }
+
+    private fun analysisCorrection(frame: FaceFrame): Pair<Float, Float> {
+        val swap = rotation % 180 != 0
+        val previewAspect = if (bufferH > 0) (if (swap) bufferH.toFloat() / bufferW else bufferW.toFloat() / bufferH) else 0f
+        return DisplayMapping.analysisToPreview(frame.imageAspect, previewAspect)
+    }
+
     private fun drawMesh(m: DisplayMapping) {
         val frame = faceSource() ?: return
         if (frame.faces.isEmpty()) return
         // Snímek detekce může mít jiný poměr stran než náhled (obojí je středový výřez senzoru).
-        val swap = rotation % 180 != 0
-        val previewAspect = if (bufferH > 0) (if (swap) bufferH.toFloat() / bufferW else bufferW.toFloat() / bufferH) else 0f
-        val (fx, fy) = DisplayMapping.analysisToPreview(frame.imageAspect, previewAspect)
+        val (fx, fy) = analysisCorrection(frame)
         GLES30.glUseProgram(meshProgram)
         GLES30.glUniform2f(GLES30.glGetUniformLocation(meshProgram, "uScale"), m.scaleX, m.scaleY)
         GLES30.glUniform1f(GLES30.glGetUniformLocation(meshProgram, "uMirror"), if (m.mirror) 1f else 0f)

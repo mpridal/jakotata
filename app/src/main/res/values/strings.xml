@@ -28,11 +28,25 @@
     <string name="toggle_voice">Voice</string>
     <string name="how_much_dad">How much dad</string>
     <string name="show_face">Show your face</string>
-    <string name="skeleton_note">Camera arrives in milestone 2</string>
 
     <string name="camera_permission_title">Let me see you</string>
     <string name="camera_permission_body">JakoTáta needs the camera to turn your face into dad\'s. Nothing leaves this device.</string>
     <string name="camera_permission_allow">Allow camera</string>
+
+    <string name="profile_sheet_title">Who will be dad?</string>
+    <string name="profile_capture_hint">Point the camera at dad\'s face: straight on, neutral face, mouth closed, good light. Or pick a front-facing photo.</string>
+    <string name="profile_consent">It\'s me, or I have this person\'s consent</string>
+    <string name="profile_consent_required">Tick the consent first.</string>
+    <string name="profile_capture_camera">Take photo with camera</string>
+    <string name="profile_pick_gallery">Pick a photo from gallery</string>
+    <string name="profile_processing">Working on it…</string>
+    <string name="profile_saved">Done! Dad is saved.</string>
+    <string name="profile_err_no_face">I can\'t see a face. Try again.</string>
+    <string name="profile_err_not_frontal">The face must look straight at the camera.</string>
+    <string name="profile_err_eyes">Eyes must be open.</string>
+    <string name="profile_err_mouth">Mouth must be closed.</string>
+    <string name="dad_eyes">Dad\'s eyes</string>
+    <string name="action_close">Close</string>
 
     <plurals name="seconds">
         <item quantity="one">%d second</item>

@@ -66,3 +66,21 @@ na nový telefon (zadání kap. 8). `INTERNET` jen pro kontrolu aktualizací.
   (Bitmap), protože MediaPipe s rotací v `ImageProcessingOptions` vracel body se zaměněnými rozměry.
   Tablet na šířku zatím neověřen.
 - **Debug:** overlay fps renderu, frekvence a doby detekce, stáří snímku; klepnutím vypne/zapne síť.
+
+## Maska (milník 3)
+
+- **Profil táty** (`core/profile`): čelní fotka z kamery (narovnaný snímek náhledu z GL, bez zrcadlení)
+  nebo z galerie → MediaPipe v režimu IMAGE → kontrola (natočení ≤ 15°, oči otevřené, pusa zavřená)
+  → čtvercový výřez 1024 × 1024 kolem obličeje + body sítě normalizované k výřezu + barva kůže v Lab.
+  Uloženo v `files/profiles/default/` (`face.jpg`, `face.json`), starý profil jde do `files/trash/`.
+- **Odchylka od zadání:** „atlas“ je zatím v prostoru čelní fotky, ne v UV prostoru kanonického modelu.
+  Pro jednu fotku je to ekvivalentní a nepotřebuje data kanonického modelu. UV atlas přijde
+  s bočními fotkami (milník 7).
+- **Render** (`core/render/MaskPass`): trojúhelníky z hran teselace MediaPipe, pozice = body dcery,
+  texturové souřadnice = body táty. Průhlednost ve vrcholech spočítaná jednou z tátovy fotky: 0 na
+  oválu (náběh 12 % šířky obličeje), v obrysu očí a vnitřních rtů (náběh 3,5 %). Volba „Tátovy oči“
+  používá variantu bez děr pro oči.
+- **Barvy:** přenos průměru a rozptylu v Lab (kůže táty z fotky → kůže dcery z čela, horních tváří
+  a nosu, bez vousů; vyhlazeno v čase). Přenos stínování: rozmazaný jas kamery pod maskou vůči
+  průměrnému jasu kůže dcery (síla 0,55, omezení 0,75–1,25).
+- **Zeslábnutí:** podle odvrácení hlavy z transformační matice – plná do 25°, nulová ve 40°.

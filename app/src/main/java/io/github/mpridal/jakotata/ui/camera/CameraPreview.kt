@@ -4,49 +4,39 @@ import android.graphics.SurfaceTexture
 import android.view.TextureView
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.compose.LocalLifecycleOwner
-import io.github.mpridal.jakotata.core.camera.CameraSource
-import io.github.mpridal.jakotata.core.face.FaceTracker
-import io.github.mpridal.jakotata.core.render.CameraRenderer
 
-/**
- * Živý obraz kamery s rendererem a sledováním obličeje. Jediné místo, kde UI drží `core` objekty
- * kamery, obličeje a renderu – samo MediaPipe ani GL nevolá (zadání kap. 4.2).
- */
+/** Živý obraz kamery s maskou a (debug) sítí bodů. */
 @Composable
 fun CameraPreview(
+    state: CameraState,
     front: Boolean,
     showMesh: Boolean,
+    maskEnabled: Boolean,
+    maskAmount: Float,
+    dadEyes: Boolean,
     modifier: Modifier = Modifier,
 ) {
-    val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val rotation = LocalView.current.display?.rotation ?: 0
-
-    val tracker = remember { FaceTracker(context) }
-    val renderer = remember { CameraRenderer({ tracker.latest.get() }, tracker.meshEdges) }
-    val camera = remember { CameraSource(context) }
+    val renderer = state.renderer
 
     renderer.mirror = front
     renderer.showMesh = showMesh
-
-    DisposableEffect(Unit) {
-        onDispose {
-            camera.release()
-            renderer.release()
-            tracker.close()
-        }
-    }
+    renderer.maskEnabled = maskEnabled
+    renderer.maskAmount = maskAmount
+    renderer.dadEyes = dadEyes
 
     DisposableEffect(lifecycleOwner, front, rotation) {
-        tracker.latest.set(null)
-        camera.bind(lifecycleOwner, front, rotation, renderer.surfaceProvider, tracker, onSensorRotation = { renderer.sensorRotationDegrees = it })
-        onDispose { camera.unbind() }
+        state.tracker.latest.set(null)
+        state.camera.bind(
+            lifecycleOwner, front, rotation, renderer.surfaceProvider, state.tracker,
+            onSensorRotation = { renderer.sensorRotationDegrees = it },
+        )
+        onDispose { state.camera.unbind() }
     }
 
     AndroidView(

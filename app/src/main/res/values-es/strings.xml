@@ -26,11 +26,25 @@
     <string name="toggle_voice">Voz</string>
     <string name="how_much_dad">Cuánto papá</string>
     <string name="show_face">Enseña tu cara</string>
-    <string name="skeleton_note">La cámara llegará en el hito 2</string>
 
     <string name="camera_permission_title">Déjame verte</string>
     <string name="camera_permission_body">JakoTáta necesita la cámara para convertir tu cara en la de papá. Nada sale de este dispositivo.</string>
     <string name="camera_permission_allow">Permitir cámara</string>
+
+    <string name="profile_sheet_title">¿Quién será papá?</string>
+    <string name="profile_capture_hint">Apunta la cámara a la cara de papá: de frente, gesto neutro, boca cerrada, buena luz. O elige una foto de frente.</string>
+    <string name="profile_consent">Soy yo o tengo el consentimiento de esta persona</string>
+    <string name="profile_consent_required">Primero marca el consentimiento.</string>
+    <string name="profile_capture_camera">Hacer foto con la cámara</string>
+    <string name="profile_pick_gallery">Elegir foto de la galería</string>
+    <string name="profile_processing">Procesando…</string>
+    <string name="profile_saved">¡Listo! Papá está guardado.</string>
+    <string name="profile_err_no_face">No veo ninguna cara. Inténtalo de nuevo.</string>
+    <string name="profile_err_not_frontal">La cara debe mirar de frente a la cámara.</string>
+    <string name="profile_err_eyes">Los ojos deben estar abiertos.</string>
+    <string name="profile_err_mouth">La boca debe estar cerrada.</string>
+    <string name="dad_eyes">Ojos de papá</string>
+    <string name="action_close">Cerrar</string>
 
     <plurals name="seconds">
         <item quantity="one">%d segundo</item>
