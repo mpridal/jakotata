@@ -1,6 +1,8 @@
 package io.github.mpridal.jakotata.core.face
 
 import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.Matrix
 import android.os.SystemClock
 import android.util.Log
 import androidx.camera.core.ImageAnalysis
@@ -8,7 +10,6 @@ import androidx.camera.core.ImageProxy
 import com.google.mediapipe.framework.image.BitmapImageBuilder
 import com.google.mediapipe.tasks.core.BaseOptions
 import com.google.mediapipe.tasks.core.Delegate
-import com.google.mediapipe.tasks.vision.core.ImageProcessingOptions
 import com.google.mediapipe.tasks.vision.core.RunningMode
 import com.google.mediapipe.tasks.vision.facelandmarker.FaceLandmarker
 import com.google.mediapipe.tasks.vision.facelandmarker.FaceLandmarkerResult
@@ -28,6 +29,8 @@ class FaceFrame(
     /** Transformační matice hlavy 4×4 (column-major) na obličej. */
     val matrices: List<FloatArray>,
     val timestampNs: Long,
+    /** Poměr stran (šířka/výška) narovnaného snímku, na kterém detekce běžela. */
+    val imageAspect: Float,
 )
 
 /**
@@ -46,6 +49,7 @@ class FaceTracker(context: Context, private val maxFaces: Int = 1) : ImageAnalys
 
     private val smoothers = Array(2) { LandmarkSmoother() }
     private val startTimes = ConcurrentHashMap<Long, Long>()
+    private val aspects = ConcurrentHashMap<Long, Float>()
     private var lastTimestampMs = 0L
     private val appContext = context.applicationContext
     private val lock = Any()
@@ -85,15 +89,20 @@ class FaceTracker(context: Context, private val maxFaces: Int = 1) : ImageAnalys
             // Časové značky pro LIVE_STREAM musí přísně růst.
             val ts = maxOf(SystemClock.uptimeMillis(), lastTimestampMs + 1)
             lastTimestampMs = ts
-            val bitmap = it.toBitmap()
-            val options = ImageProcessingOptions.builder()
-                .setRotationDegrees(it.imageInfo.rotationDegrees)
-                .build()
+            // Snímek narovnáme sami: MediaPipe s rotací v ImageProcessingOptions vrací body
+            // normalizované se zaměněnými rozměry (síť byla protažená v poměru 9:16).
+            val rot = it.imageInfo.rotationDegrees
+            val raw = it.toBitmap()
+            val bitmap = if (rot != 0) {
+                Bitmap.createBitmap(raw, 0, 0, raw.width, raw.height, Matrix().apply { postRotate(rot.toFloat()) }, false)
+            } else raw
+            aspects[ts] = bitmap.width.toFloat() / bitmap.height
+            PerfStats.analysisSize = "${it.width}x${it.height}r$rot"
             synchronized(lock) {
                 if (closed) return
                 val lm = landmarker ?: create(appContext, maxFaces).also { landmarker = it }
                 startTimes[ts] = System.nanoTime()
-                lm.detectAsync(BitmapImageBuilder(bitmap).build(), options, ts)
+                lm.detectAsync(BitmapImageBuilder(bitmap).build(), ts)
             }
         }
     }
@@ -101,6 +110,7 @@ class FaceTracker(context: Context, private val maxFaces: Int = 1) : ImageAnalys
     private fun onResult(result: FaceLandmarkerResult, @Suppress("UNUSED_PARAMETER") input: com.google.mediapipe.framework.image.MPImage) {
         val now = System.nanoTime()
         val started = startTimes.remove(result.timestampMs()) ?: now
+        val aspect = aspects.remove(result.timestampMs()) ?: 0f
         val faces = result.faceLandmarks().take(smoothers.size).mapIndexed { i, landmarks ->
             val coords = FloatArray(landmarks.size * 3)
             landmarks.forEachIndexed { j, p ->
@@ -114,7 +124,7 @@ class FaceTracker(context: Context, private val maxFaces: Int = 1) : ImageAnalys
             FloatArray(cats.size) { k -> cats[k].score() }
         }
         val matrices = result.facialTransformationMatrixes().orElse(emptyList())
-        latest.set(FaceFrame(faces, blendshapes, matrices, now))
+        latest.set(FaceFrame(faces, blendshapes, matrices, now, aspect))
         PerfStats.onDetection(now - started, faces.size)
     }
 

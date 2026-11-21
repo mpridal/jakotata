@@ -33,4 +33,15 @@ class DisplayMappingTest {
         assertEquals(1f - lx, rx, 1e-6f)
         assert(lx > 0.5f) { "mirrored left point should land right of center" }
     }
+
+    @Test fun analysis4by3IsWiderThanPortrait16by9Preview() {
+        // Na výšku: detekce 480×640 (3:4) je širší než náhled 720×1280 (9:16) → x se roztáhne.
+        val (fx, fy) = DisplayMapping.analysisToPreview(480f / 640f, 720f / 1280f)
+        assertEquals((480f / 640f) / (720f / 1280f), fx, 1e-5f)
+        assertEquals(1f, fy, 1e-6f)
+    }
+
+    @Test fun sameAspectNeedsNoCorrection() {
+        assertEquals(Pair(1f, 1f), DisplayMapping.analysisToPreview(0.5625f, 0.5625f))
+    }
 }

@@ -15,6 +15,7 @@ data class PerfSnapshot(
     val frameAgeMs: Float = 0f,
     val faces: Int = 0,
     val delegate: String = "",
+    val analysisSize: String = "",
 )
 
 /** Počítadla plněná z vláken renderu a detekce; [sample] je volá jednou za čas z UI. */
@@ -25,6 +26,7 @@ object PerfStats {
     private val frameAgeNsSum = AtomicLong()
     @Volatile var faces = 0
     @Volatile var delegate = ""
+    @Volatile var analysisSize = ""
     private var lastSampleNs = System.nanoTime()
 
     private val _snapshot = MutableStateFlow(PerfSnapshot())
@@ -57,6 +59,7 @@ object PerfStats {
             frameAgeMs = if (r > 0) ageNs / r / 1e6f else 0f,
             faces = faces,
             delegate = delegate,
+            analysisSize = analysisSize,
         )
     }
 }

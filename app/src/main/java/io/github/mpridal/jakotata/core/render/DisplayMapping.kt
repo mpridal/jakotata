@@ -16,6 +16,17 @@ data class DisplayMapping(val scaleX: Float, val scaleY: Float, val mirror: Bool
 
     companion object {
         /**
+         * Přepočet normalizovaných souřadnic ze snímku detekce do snímku náhledu, když mají různý
+         * poměr stran. Oba jsou středové výřezy senzoru: širší snímek vidí víc do stran, vyšší víc
+         * nahoru a dolů. Vrací násobitele kolem středu (x, y).
+         */
+        fun analysisToPreview(analysisAspect: Float, previewAspect: Float): Pair<Float, Float> {
+            if (analysisAspect <= 0f || previewAspect <= 0f) return Pair(1f, 1f)
+            return if (analysisAspect > previewAspect) Pair(analysisAspect / previewAspect, 1f)
+            else Pair(1f, previewAspect / analysisAspect)
+        }
+
+        /**
          * @param bufferWidth rozměry bufferu kamery (před otočením)
          * @param rotationDegrees o kolik stupňů po směru hodin buffer otočit, aby byl rovně
          */

@@ -51,7 +51,15 @@ class CameraRenderer(
     private var cameraTexture: SurfaceTexture? = null
     private var bufferW = 0
     private var bufferH = 0
+    /** Celkové otočení bufferu do narovnaného obrazu (z CameraX). */
     @Volatile private var rotation = 0
+    /** Otočení, které ještě zbývá po matici SurfaceTexture (ta už může obsahovat otočení senzoru). */
+    @Volatile private var shaderRotation = 0
+    /** Matice SurfaceTexture přední kamery už obraz zrcadlí (camera transform) → shader nezrcadlí podruhé. */
+    @Volatile private var textureMirrored = false
+
+    /** Otočení senzoru vůči přirozené orientaci zařízení; nastaví CameraSource po připojení kamery. */
+    @Volatile var sensorRotationDegrees: Int = 0
     private val texMatrix = FloatArray(16)
     private var hasFrame = false
 
@@ -145,7 +153,17 @@ class CameraRenderer(
         bufferW = res.width; bufferH = res.height
         hasFrame = false
 
-        request.setTransformationInfoListener(executor) { info -> rotation = info.rotationDegrees }
+        request.setTransformationInfoListener(executor) { info ->
+            rotation = info.rotationDegrees
+            // Kamera zapsala orientaci senzoru do Surface → matice SurfaceTexture už ji obsahuje.
+            textureMirrored = info.hasCameraTransform() && info.isMirroring
+            val extra = if (info.hasCameraTransform()) {
+                ((info.rotationDegrees - sensorRotationDegrees) % 360 + 360) % 360
+            } else info.rotationDegrees
+            // Ve zrcadlené textuře se otáčí opačným směrem. Ověřeno jen na výšku (extra = 0); TODO tablet na šířku.
+            shaderRotation = if (textureMirrored) (360 - extra) % 360 else extra
+            Log.i(TAG, "Transform: rotation=${info.rotationDegrees} cameraTransform=${info.hasCameraTransform()} crop=${info.cropRect} mirroring=${info.isMirroring} buffer=${res.width}x${res.height}")
+        }
         request.provideSurface(surface, executor) {
             surface.release()
             if (cameraTexture !== st) {
@@ -194,7 +212,11 @@ class CameraRenderer(
         EGL14.eglSwapBuffers(eglDisplay, window)
 
         if (st != null && hasFrame) {
-            val age = System.nanoTime() - st.timestamp
+            // Časová značka kamery je podle zařízení v CLOCK_MONOTONIC, nebo v BOOTTIME (včetně spánku).
+            val ts = st.timestamp
+            val mono = System.nanoTime() - ts
+            val boot = android.os.SystemClock.elapsedRealtimeNanos() - ts
+            val age = if (mono in 0..1_000_000_000L) mono else boot
             PerfStats.onFrameRendered(if (age in 0..1_000_000_000L) age else 0L)
         }
     }
@@ -206,8 +228,8 @@ class CameraRenderer(
         GLES30.glUniform1i(GLES30.glGetUniformLocation(cameraProgram, "uTex"), 0)
         GLES30.glUniformMatrix4fv(GLES30.glGetUniformLocation(cameraProgram, "uTexMatrix"), 1, false, texMatrix, 0)
         GLES30.glUniform2f(GLES30.glGetUniformLocation(cameraProgram, "uScale"), m.scaleX, m.scaleY)
-        GLES30.glUniform1f(GLES30.glGetUniformLocation(cameraProgram, "uMirror"), if (m.mirror) 1f else 0f)
-        GLES30.glUniform1i(GLES30.glGetUniformLocation(cameraProgram, "uRotation"), rotation)
+        GLES30.glUniform1f(GLES30.glGetUniformLocation(cameraProgram, "uMirror"), if (m.mirror != textureMirrored) 1f else 0f)
+        GLES30.glUniform1i(GLES30.glGetUniformLocation(cameraProgram, "uRotation"), shaderRotation)
         val loc = GLES30.glGetAttribLocation(cameraProgram, "aPos")
         GLES30.glEnableVertexAttribArray(loc)
         quad.position(0)
@@ -219,6 +241,10 @@ class CameraRenderer(
     private fun drawMesh(m: DisplayMapping) {
         val frame = faceSource() ?: return
         if (frame.faces.isEmpty()) return
+        // Snímek detekce může mít jiný poměr stran než náhled (obojí je středový výřez senzoru).
+        val swap = rotation % 180 != 0
+        val previewAspect = if (bufferH > 0) (if (swap) bufferH.toFloat() / bufferW else bufferW.toFloat() / bufferH) else 0f
+        val (fx, fy) = DisplayMapping.analysisToPreview(frame.imageAspect, previewAspect)
         GLES30.glUseProgram(meshProgram)
         GLES30.glUniform2f(GLES30.glGetUniformLocation(meshProgram, "uScale"), m.scaleX, m.scaleY)
         GLES30.glUniform1f(GLES30.glGetUniformLocation(meshProgram, "uMirror"), if (m.mirror) 1f else 0f)
@@ -235,7 +261,9 @@ class CameraRenderer(
                 val a = meshEdges[i] * 3
                 val b = meshEdges[i + 1] * 3
                 if (b + 1 < face.size && a + 1 < face.size) {
-                    meshVertices.put(face[a]).put(face[a + 1]).put(face[b]).put(face[b + 1])
+                    meshVertices
+                        .put((face[a] - 0.5f) * fx + 0.5f).put((face[a + 1] - 0.5f) * fy + 0.5f)
+                        .put((face[b] - 0.5f) * fx + 0.5f).put((face[b + 1] - 0.5f) * fy + 0.5f)
                     n++
                 }
                 i += 2

@@ -60,4 +60,9 @@ na nový telefon (zadání kap. 8). `INTERNET` jen pro kontrolu aktualizací.
   plochu a zrcadlení přední kamery. Stejné mapování pro obraz (shader) i body (síť).
 - **Obličej:** MediaPipe Face Landmarker, LIVE_STREAM, GPU delegate s CPU zálohou, model v assets
   (nekomprimovaný). Model se načítá líně na vlákně analýzy. Vyhlazení One Euro na všech souřadnicích.
+- **Otočení a zrcadlení (ověřeno na Pixelu 10 Pro):** CameraX hlásí `hasCameraTransform=true`, tj. matice
+  SurfaceTexture už obsahuje otočení senzoru i zrcadlení přední kamery. Shader proto doplácí jen rozdíl
+  `rotationDegrees − sensorRotationDegrees` a nezrcadlí podruhé. Snímek pro MediaPipe otáčíme sami
+  (Bitmap), protože MediaPipe s rotací v `ImageProcessingOptions` vracel body se zaměněnými rozměry.
+  Tablet na šířku zatím neověřen.
 - **Debug:** overlay fps renderu, frekvence a doby detekce, stáří snímku; klepnutím vypne/zapne síť.

@@ -101,8 +101,8 @@ private fun DebugOverlay(showMesh: Boolean, onToggleMesh: () -> Unit) {
     val s by PerfStats.snapshot.collectAsStateWithLifecycle()
     GlassBox(Modifier.clickable(onClick = onToggleMesh), shape = RoundedCornerShape(18.dp)) {
         Text(
-            "%.0f fps · face %.0f/s %.1f ms %s\nframe age %.0f ms · faces %d · mesh %s".format(
-                s.renderFps, s.detectFps, s.detectMs, s.delegate, s.frameAgeMs, s.faces, if (showMesh) "on" else "off",
+            "%.0f fps · face %.0f/s %.1f ms %s\nframe age %.0f ms · faces %d · mesh %s\nanalysis %s".format(
+                s.renderFps, s.detectFps, s.detectMs, s.delegate, s.frameAgeMs, s.faces, if (showMesh) "on" else "off", s.analysisSize,
             ),
             modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
             fontFamily = FontFamily.Monospace,

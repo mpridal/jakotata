@@ -45,7 +45,7 @@ fun CameraPreview(
 
     DisposableEffect(lifecycleOwner, front, rotation) {
         tracker.latest.set(null)
-        camera.bind(lifecycleOwner, front, rotation, renderer.surfaceProvider, tracker)
+        camera.bind(lifecycleOwner, front, rotation, renderer.surfaceProvider, tracker, onSensorRotation = { renderer.sensorRotationDegrees = it })
         onDispose { camera.unbind() }
     }
 

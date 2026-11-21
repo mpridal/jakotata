@@ -2,6 +2,7 @@ package io.github.mpridal.jakotata.core.camera
 
 import android.content.Context
 import android.util.Log
+import android.util.Range
 import android.util.Size
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageAnalysis
@@ -32,6 +33,7 @@ class CameraSource(private val context: Context) {
         targetRotation: Int,
         previewSurface: Preview.SurfaceProvider,
         analyzer: ImageAnalysis.Analyzer,
+        onSensorRotation: (Int) -> Unit = {},
         processingSize: Size = Size(1280, 720),
         analysisSize: Size = Size(640, 360),
     ) {
@@ -41,6 +43,8 @@ class CameraSource(private val context: Context) {
             val preview = Preview.Builder()
                 .setResolutionSelector(selector(processingSize))
                 .setTargetRotation(targetRotation)
+                // Cíl 30 fps (zadání kap. 5); bez toho Pixel v pokojovém světle klesá na 24.
+                .setTargetFrameRate(Range(30, 30))
                 .build()
                 .also { it.surfaceProvider = previewSurface }
             val analysis = ImageAnalysis.Builder()
@@ -53,6 +57,8 @@ class CameraSource(private val context: Context) {
             val selector = if (front) CameraSelector.DEFAULT_FRONT_CAMERA else CameraSelector.DEFAULT_BACK_CAMERA
             try {
                 p.unbindAll()
+                // Před bindem, aby renderer znal otočení senzoru dřív, než dorazí první buffer.
+                p.getCameraInfo(selector).let { onSensorRotation(it.sensorRotationDegrees) }
                 p.bindToLifecycle(owner, selector, preview, analysis)
             } catch (e: Exception) {
                 Log.e(TAG, "Camera bind failed", e)
