@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="cs">
+<head>
+<meta charset="utf-8">
+<title>JakoTáta – nastavení</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&amp;family=Nunito:wght@600;700;800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#FF6B57}a:hover{color:#FF8A7A}
+.glass{-webkit-backdrop-filter:blur(22px) saturate(150%);backdrop-filter:blur(22px) saturate(150%);border:1px solid transparent;box-shadow:0 8px 28px rgba(40,20,50,0.12)}
+.ico{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;display:block;flex:none}
+button{font:inherit;color:inherit;cursor:pointer;margin:0}
+</style>
+</helmet>
+<div style="position: relative; width: 390px; height: 844px; overflow: hidden; background: {{wall}}; font-family: Nunito, system-ui, sans-serif; color: {{ink}}">
+
+<svg width="390" height="844" viewBox="0 0 390 844" style="position: absolute; left: 0; top: 0; filter: blur(30px)" aria-hidden="true">
+<circle cx="330" cy="120" r="150" fill="#FFB86B" fill-opacity="{{blobA}}"></circle>
+<circle cx="40" cy="460" r="170" fill="#7FB2FF" fill-opacity="{{blobB}}"></circle>
+<circle cx="300" cy="760" r="160" fill="{{accent}}" fill-opacity="{{blobC}}"></circle>
+</svg>
+
+<div style="position: absolute; inset: 0; padding: 16px 12px; display: flex; flex-direction: column; gap: 12px; box-sizing: border-box">
+
+<div style="display: flex; align-items: center; gap: 10px; padding: 0 4px">
+<button class="glass" aria-label="Zpět ke kameře" style="width: 48px; height: 48px; border-radius: 24px; display: flex; align-items: center; justify-content: center; padding: 0; background: {{glass}}; border-color: {{line}}; color: {{ink}}">
+<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 18l-6-6 6-6"></path></svg>
+</button>
+<h1 style="margin: 0; font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: 26px">Nastavení</h1>
+</div>
+
+<section class="glass" aria-label="Vzhled a jazyk" style="border-radius: 24px; padding: 6px 0; background: {{glass}}; border-color: {{line}}">
+<div style="display: flex; align-items: center; gap: 12px; min-height: 54px; padding: 0 14px">
+<span style="width: 34px; height: 34px; border-radius: 17px; display: flex; align-items: center; justify-content: center; background: {{track}}"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true" style="width: 18px; height: 18px"><circle cx="12" cy="12" r="9"></circle><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"></path></svg></span>
+<span style="flex: 1; font-size: 16px; font-weight: 800">Jazyk</span>
+<span style="font-size: 15px; font-weight: 700; color: {{soft}}">Čeština</span>
+<svg class="ico" viewBox="0 0 24 24" aria-hidden="true" style="width: 18px; height: 18px; color: {{soft}}"><path d="M9 6l6 6-6 6"></path></svg>
+</div>
+<span aria-hidden="true" style="display: block; height: 1px; margin-left: 60px; background: {{sep}}"></span>
+<div style="display: flex; flex-direction: column; gap: 10px; padding: 12px 14px 10px">
+<div style="display: flex; align-items: center; gap: 12px">
+<span style="width: 34px; height: 34px; border-radius: 17px; display: flex; align-items: center; justify-content: center; background: {{track}}"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true" style="width: 18px; height: 18px"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path></svg></span>
+<span style="font-size: 16px; font-weight: 800">Vzhled</span>
+</div>
+<div role="radiogroup" aria-label="Vzhled" style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; padding: 4px; border-radius: 20px; background: {{track}}">
+<button role="radio" aria-checked="false" style="height: 36px; border: 0; border-radius: 16px; font-weight: 800; font-size: 14px; background: transparent; color: {{ink}}">Podle systému</button>
+<button role="radio" aria-checked="{{lightChecked}}" style="height: 36px; border: 0; border-radius: 16px; font-weight: 800; font-size: 14px; background: {{lightBg}}; color: {{lightFg}}">Světlý</button>
+<button role="radio" aria-checked="{{darkChecked}}" style="height: 36px; border: 0; border-radius: 16px; font-weight: 800; font-size: 14px; background: {{darkBg}}; color: {{darkFg}}">Tmavý</button>
+</div>
+</div>
+</section>
+
+<section class="glass" aria-label="Zvuk" style="border-radius: 24px; padding: 6px 0; background: {{glass}}; border-color: {{line}}">
+<div style="display: flex; align-items: center; gap: 12px; min-height: 54px; padding: 0 14px">
+<span style="width: 34px; height: 34px; border-radius: 17px; display: flex; align-items: center; justify-content: center; background: {{track}}"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true" style="width: 18px; height: 18px"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"></path><path d="M9 10h5a2.5 2.5 0 0 1 0 5h-4"></path><path d="M11 8l-2 2 2 2"></path></svg></span>
+<span style="flex: 1; font-size: 16px; font-weight: 800">Výchozí režim zvuku</span>
+<span style="font-size: 15px; font-weight: 700; color: {{soft}}">Papoušek</span>
+<svg class="ico" viewBox="0 0 24 24" aria-hidden="true" style="width: 18px; height: 18px; color: {{soft}}"><path d="M9 6l6 6-6 6"></path></svg>
+</div>
+<span aria-hidden="true" style="display: block; height: 1px; margin-left: 60px; background: {{sep}}"></span>
+<div style="display: flex; align-items: center; gap: 12px; min-height: 62px; padding: 0 14px">
+<span style="width: 34px; height: 34px; border-radius: 17px; display: flex; align-items: center; justify-content: center; background: {{track}}"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true" style="width: 18px; height: 18px"><path d="M4 15v-3a8 8 0 0 1 16 0v3"></path><rect x="3" y="14" width="4" height="6" rx="1.5"></rect><rect x="17" y="14" width="4" height="6" rx="1.5"></rect></svg></span>
+<span style="flex: 1; display: flex; flex-direction: column">
+<span style="font-size: 16px; font-weight: 800">Živě v Bluetooth sluchátkách</span>
+<span style="font-size: 13px; font-weight: 700; color: {{soft}}">se zpožděním, může plést při mluvení</span>
+</span>
+<button role="switch" aria-checked="false" aria-label="Živě v Bluetooth sluchátkách" style="width: 52px; height: 32px; border-radius: 16px; border: 0; padding: 3px; display: flex; justify-content: flex-start; background: {{switchOff}}">
+<span style="width: 26px; height: 26px; border-radius: 13px; background: #FFFFFF; box-shadow: 0 1px 4px rgba(0,0,0,0.25)"></span>
+</button>
+</div>
+</section>
+
+<section class="glass" aria-label="Video" style="border-radius: 24px; padding: 6px 0; background: {{glass}}; border-color: {{line}}">
+<div style="display: flex; align-items: center; gap: 12px; min-height: 54px; padding: 0 14px">
+<span style="width: 34px; height: 34px; border-radius: 17px; display: flex; align-items: center; justify-content: center; background: {{track}}"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true" style="width: 18px; height: 18px"><rect x="3" y="6" width="13" height="12" rx="2"></rect><path d="M16 10l5-3v10l-5-3z"></path></svg></span>
+<span style="flex: 1; font-size: 16px; font-weight: 800">Kvalita videa</span>
+<span style="font-size: 15px; font-weight: 700; color: {{soft}}">720p</span>
+<svg class="ico" viewBox="0 0 24 24" aria-hidden="true" style="width: 18px; height: 18px; color: {{soft}}"><path d="M9 6l6 6-6 6"></path></svg>
+</div>
+<span aria-hidden="true" style="display: block; height: 1px; margin-left: 60px; background: {{sep}}"></span>
+<div style="display: flex; align-items: center; gap: 12px; min-height: 54px; padding: 0 14px">
+<span style="width: 34px; height: 34px; border-radius: 17px; display: flex; align-items: center; justify-content: center; background: {{track}}"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true" style="width: 18px; height: 18px"><circle cx="12" cy="13" r="8"></circle><path d="M12 9v4l2.5 2.5M9 2h6"></path></svg></span>
+<span style="flex: 1; font-size: 16px; font-weight: 800">Nejdelší nahrávka</span>
+<span style="font-size: 15px; font-weight: 700; color: {{soft}}">2 min</span>
+<svg class="ico" viewBox="0 0 24 24" aria-hidden="true" style="width: 18px; height: 18px; color: {{soft}}"><path d="M9 6l6 6-6 6"></path></svg>
+</div>
+<span aria-hidden="true" style="display: block; height: 1px; margin-left: 60px; background: {{sep}}"></span>
+<div style="display: flex; align-items: center; gap: 12px; min-height: 54px; padding: 0 14px">
+<span style="width: 34px; height: 34px; border-radius: 17px; display: flex; align-items: center; justify-content: center; background: {{track}}"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true" style="width: 18px; height: 18px"><circle cx="8.5" cy="10" r="4"></circle><circle cx="16.5" cy="10" r="4"></circle><path d="M3 20c0-3 2.5-5 5.5-5M21 20c0-3-2.5-5-5.5-5"></path></svg></span>
+<span style="flex: 1; font-size: 16px; font-weight: 800">Obličejů najednou</span>
+<div role="radiogroup" aria-label="Obličejů najednou" style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 3px; padding: 3px; border-radius: 16px; background: {{track}}">
+<button role="radio" aria-checked="true" style="width: 40px; height: 30px; border: 0; border-radius: 13px; font-weight: 800; font-size: 14px; background: {{onBg}}; color: {{onInk}}">1</button>
+<button role="radio" aria-checked="false" style="width: 40px; height: 30px; border: 0; border-radius: 13px; font-weight: 800; font-size: 14px; background: transparent; color: {{ink}}">2</button>
+</div>
+</div>
+</section>
+
+<section class="glass" aria-label="Aktualizace" style="border-radius: 24px; padding: 6px 0; background: {{glass}}; border-color: {{line}}">
+<div style="display: flex; align-items: center; gap: 12px; min-height: 62px; padding: 0 14px">
+<span style="width: 34px; height: 34px; border-radius: 17px; display: flex; align-items: center; justify-content: center; background: {{track}}"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true" style="width: 18px; height: 18px"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"></path></svg></span>
+<span style="flex: 1; display: flex; flex-direction: column">
+<span style="font-size: 16px; font-weight: 800">Kontrolovat aktualizace</span>
+<span style="font-size: 13px; font-weight: 700; color: {{soft}}">verze 0.1.0 · naposledy dnes</span>
+</span>
+<button role="switch" aria-checked="true" aria-label="Kontrolovat aktualizace" style="width: 52px; height: 32px; border-radius: 16px; border: 0; padding: 3px; display: flex; justify-content: flex-end; background: {{accent}}">
+<span style="width: 26px; height: 26px; border-radius: 13px; background: #FFFFFF; box-shadow: 0 1px 4px rgba(0,0,0,0.25)"></span>
+</button>
+</div>
+</section>
+
+<a href="#" class="glass" style="display: flex; align-items: center; gap: 12px; min-height: 60px; padding: 0 14px; border-radius: 24px; text-decoration: none; background: {{glass}}; border-color: {{line}}; color: {{ink}}">
+<span style="width: 34px; height: 34px; border-radius: 17px; display: flex; align-items: center; justify-content: center; background: {{accent}}; color: #FFFFFF"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true" style="width: 18px; height: 18px"><rect x="5" y="11" width="14" height="9" rx="2"></rect><path d="M8 11V8a4 4 0 0 1 8 0v3"></path></svg></span>
+<span style="flex: 1; display: flex; flex-direction: column">
+<span style="font-size: 16px; font-weight: 800">Rodičovská zóna</span>
+<span style="font-size: 13px; font-weight: 700; color: {{soft}}">profily, vodoznak, sdílení</span>
+</span>
+<svg class="ico" viewBox="0 0 24 24" aria-hidden="true" style="width: 18px; height: 18px; color: {{soft}}"><path d="M9 6l6 6-6 6"></path></svg>
+</a>
+
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"svetly":{"editor":"boolean","default":true,"section":"Vzhled"},"accent":{"editor":"color","default":"#FF6B57","options":["#FF6B57","#8B5CF6","#14B8A6","#F59E0B"],"section":"Vzhled"},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const light = this.props.svetly == null ? true : !!this.props.svetly;
+    const t = light
+      ? { wall: '#EFE8F0', blobA: 0.55, blobB: 0.4, blobC: 0.28, glass: 'rgba(255,255,255,0.62)', line: 'rgba(255,255,255,0.95)', ink: '#1B1724', soft: '#4A4458', sep: 'rgba(27,23,36,0.1)', onBg: '#1B1724', onInk: '#FFFFFF', track: 'rgba(27,23,36,0.07)', switchOff: 'rgba(27,23,36,0.22)' }
+      : { wall: '#241C2A', blobA: 0.35, blobB: 0.25, blobC: 0.22, glass: 'rgba(22,18,30,0.46)', line: 'rgba(255,255,255,0.16)', ink: '#FFFFFF', soft: 'rgba(255,255,255,0.78)', sep: 'rgba(255,255,255,0.12)', onBg: '#FFFFFF', onInk: '#1B1724', track: 'rgba(255,255,255,0.1)', switchOff: 'rgba(255,255,255,0.28)' };
+    return Object.assign({}, t, {
+      accent: this.props.accent || '#FF6B57',
+      lightChecked: light ? 'true' : 'false',
+      darkChecked: light ? 'false' : 'true',
+      lightBg: light ? t.onBg : 'transparent',
+      lightFg: light ? t.onInk : t.ink,
+      darkBg: light ? 'transparent' : t.onBg,
+      darkFg: light ? t.ink : t.onInk
+    });
+  }
+}
+</script>
+</body>
+</html>

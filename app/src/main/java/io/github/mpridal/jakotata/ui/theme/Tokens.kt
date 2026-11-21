@@ -33,44 +33,51 @@ data class JakoColors(
     val accent: Brush get() = Brush.linearGradient(listOf(accentStart, accentEnd))
 }
 
-val Coral = Color(0xFFFF7A6B)
+// Hodnoty ze schváleného návrhu UI (docs/design/, 21. 11. 2026).
+val Coral = Color(0xFFFF6B57)
 val Violet = Color(0xFF8B5CF6)
 val RecordRed = Color(0xFFFF3B30)
+val Ink = Color(0xFF1B1724)
 
 val LightJakoColors = JakoColors(
     isDark = false,
     root = Color(0xFFF3EEFA),
-    glass = Color.White.copy(alpha = 0.18f),
+    glass = Color.White.copy(alpha = 0.72f),
     glassSolid = Color(0xF2FFFFFF),
-    glassBorder = Color.White.copy(alpha = 0.25f),
+    glassBorder = Color.White.copy(alpha = 0.90f),
     scrim = Color.Black.copy(alpha = 0.28f),
-    onGlass = Color(0xFF1E1830),
-    onGlassMuted = Color(0xFF4A4360),
+    onGlass = Ink,
+    onGlassMuted = Color(0xFF4A4458),
     accentStart = Coral,
-    accentEnd = Violet,
+    accentEnd = Coral,
     recording = RecordRed,
-    shadow = Color(0x33000000),
+    shadow = Color(0x38000000),
 )
 
 val DarkJakoColors = JakoColors(
     isDark = true,
-    root = Color(0xFF1A1530),
-    glass = Color.Black.copy(alpha = 0.16f),
-    glassSolid = Color(0xF2221C38),
-    glassBorder = Color.White.copy(alpha = 0.25f),
+    root = Color(0xFF2B2333),
+    glass = Color(0xFF16121E).copy(alpha = 0.42f),
+    glassSolid = Color(0xF216121E),
+    glassBorder = Color.White.copy(alpha = 0.18f),
     scrim = Color.Black.copy(alpha = 0.40f),
-    onGlass = Color(0xFFF6F2FF),
-    onGlassMuted = Color(0xFFCBC3E0),
+    onGlass = Color.White,
+    onGlassMuted = Color.White.copy(alpha = 0.80f),
     accentStart = Coral,
-    accentEnd = Violet,
+    accentEnd = Coral,
     recording = RecordRed,
-    shadow = Color(0x66000000),
+    shadow = Color(0x38000000),
 )
 
-/** Rozměry: zaoblení skla 24–28 dp, dotykové cíle min. 56 dp (děti), rozmazání 20–30 dp. */
+/**
+ * Rozměry z návrhu: pilulky 52 dp (zaoblení 26), spodní panel zaoblení 32, rozmazání 22 dp,
+ * tlačítko nahrávání 84 dp. Dotykové cíle min. 52–56 dp (děti).
+ */
 object JakoDimens {
     val glassRadius = 26.dp
-    val glassBlur = 24.dp
+    val panelRadius = 32.dp
+    val glassBlur = 22.dp
+    val pill = 52.dp
     val touchTarget = 56.dp
     val recordButton = 84.dp
     val gutter = 16.dp

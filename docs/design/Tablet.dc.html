@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="cs">
+<head>
+<meta charset="utf-8">
+<title>JakoTáta – tablet na šířku</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&amp;family=Nunito:wght@600;700;800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#FF6B57}a:hover{color:#FF8A7A}
+.glass{-webkit-backdrop-filter:blur(24px) saturate(150%);backdrop-filter:blur(24px) saturate(150%);border:1px solid transparent;box-shadow:0 12px 40px rgba(0,0,0,0.22)}
+.ico{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;display:block;flex:none}
+button{font:inherit;color:inherit;cursor:pointer;margin:0}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+</style>
+</helmet>
+<div style="position: relative; width: 1280px; height: 800px; overflow: hidden; background: #2B2333; font-family: Nunito, system-ui, sans-serif; color: {{ink}}">
+
+<svg width="1280" height="800" viewBox="0 0 1280 800" style="position: absolute; left: 0; top: 0" role="img" aria-label="Živý obraz kamery: dcera s tátovou maskou">
+<defs>
+<linearGradient id="wall" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2B2333"/><stop offset="1" stop-color="#3A2C33"/></linearGradient>
+<radialGradient id="lamp" cx="0.78" cy="0.18" r="0.5"><stop offset="0" stop-color="#FFB86B" stop-opacity="0.5"/><stop offset="1" stop-color="#FFB86B" stop-opacity="0"/></radialGradient>
+<radialGradient id="win" cx="0.12" cy="0.4" r="0.45"><stop offset="0" stop-color="#7FB2FF" stop-opacity="0.26"/><stop offset="1" stop-color="#7FB2FF" stop-opacity="0"/></radialGradient>
+<radialGradient id="mask" cx="0.5" cy="0.5" r="0.5"><stop offset="0.74" stop-color="#C98F6B" stop-opacity="1"/><stop offset="1" stop-color="#C98F6B" stop-opacity="0"/></radialGradient>
+<pattern id="stub" width="5" height="5" patternUnits="userSpaceOnUse"><circle cx="2.5" cy="2.5" r="0.75" fill="#5B3B2A" fill-opacity="0.6"/></pattern>
+</defs>
+<rect width="1280" height="800" fill="url(#wall)"/>
+<rect width="1280" height="800" fill="url(#lamp)"/>
+<rect width="1280" height="800" fill="url(#win)"/>
+<rect x="860" y="120" width="150" height="104" rx="8" fill="#FFFFFF" fill-opacity="0.06"/>
+<rect x="380" y="180" width="90" height="160" rx="10" fill="#FFFFFF" fill-opacity="0.05"/>
+<rect x="0" y="640" width="1280" height="160" fill="#000000" fill-opacity="0.12"/>
+<g transform="translate(445 -40)">
+<path d="M100 420 C 92 300 150 250 198 250 C 252 250 300 300 292 420 C 300 520 290 600 270 640 L 122 640 C 104 600 92 520 100 420 Z" fill="#5A3826"/>
+<path d="M48 844 C 56 716 120 668 195 668 C 270 668 334 716 342 844 Z" fill="#2F7F7A"/>
+<path d="M150 668 C 160 700 230 700 240 668" fill="none" stroke="#256C67" stroke-width="6"/>
+<path d="M168 560 L 222 560 L 226 676 C 210 690 180 690 164 676 Z" fill="#E2AE88"/>
+<ellipse cx="110" cy="452" rx="12" ry="20" fill="#E9B893"/>
+<ellipse cx="280" cy="452" rx="12" ry="20" fill="#E9B893"/>
+<ellipse cx="195" cy="440" rx="86" ry="108" fill="#F1C7A3"/>
+<ellipse cx="195" cy="448" rx="86" ry="106" fill="url(#mask)" opacity="0.92"/>
+<path d="M132 470 C 140 540 170 560 195 560 C 220 560 250 540 258 470 C 246 500 228 512 195 512 C 162 512 144 500 132 470 Z" fill="url(#stub)"/>
+<path d="M140 398 C 152 388 172 386 184 392" fill="none" stroke="#3E2518" stroke-width="7" stroke-linecap="round"/>
+<path d="M206 392 C 218 386 238 388 250 398" fill="none" stroke="#3E2518" stroke-width="7" stroke-linecap="round"/>
+<ellipse cx="163" cy="425" rx="14" ry="9" fill="#FFFFFF"/>
+<circle cx="164" cy="425" r="6" fill="#5B3A22"/>
+<circle cx="166" cy="423" r="1.8" fill="#FFFFFF"/>
+<ellipse cx="227" cy="425" rx="14" ry="9" fill="#FFFFFF"/>
+<circle cx="226" cy="425" r="6" fill="#5B3A22"/>
+<circle cx="228" cy="423" r="1.8" fill="#FFFFFF"/>
+<path d="M195 432 C 192 452 184 466 186 474 C 190 480 200 480 206 476" fill="none" stroke="#A86F4F" stroke-width="3" stroke-linecap="round"/>
+<path d="M168 494 C 180 486 190 488 195 492 C 200 488 210 486 222 494 C 212 498 202 498 195 496 C 188 498 178 498 168 494 Z" fill="#4A2D1E" fill-opacity="0.85"/>
+<path d="M175 506 C 185 520 205 520 215 506 C 205 512 185 512 175 506 Z" fill="#B5484A"/>
+<path d="M110 410 C 112 320 160 284 200 284 C 248 284 284 320 282 400 C 262 352 222 336 196 340 C 170 344 130 360 110 410 Z" fill="#6A4330"/>
+</g>
+</svg>
+
+<button class="glass" aria-label="Profil Táta, změnit profil" style="position: absolute; top: 20px; left: 20px; display: flex; align-items: center; gap: 10px; height: 56px; padding: 0 16px 0 8px; border-radius: 28px; background: {{glass}}; border-color: {{line}}; color: {{ink}}">
+<span style="width: 42px; height: 42px; border-radius: 21px; background: #C98F6B; display: flex; align-items: center; justify-content: center; font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: 19px; color: #2B1A10">T</span>
+<span style="font-weight: 800; font-size: 18px">Táta</span>
+<svg class="ico" viewBox="0 0 24 24" aria-hidden="true" style="width: 18px; height: 18px"><path d="M6 9l6 6 6-6"></path></svg>
+</button>
+
+<div class="glass" style="position: absolute; top: 24px; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 10px; height: 44px; padding: 0 18px; border-radius: 22px; white-space: nowrap; background: {{glass}}; border-color: {{line}}; color: {{ink}}">
+<div aria-hidden="true" style="display: flex; align-items: center; gap: 3px; height: 24px">
+<span style="width: 4px; height: 8px; border-radius: 2px; background: {{accent}}"></span>
+<span style="width: 4px; height: 16px; border-radius: 2px; background: {{accent}}"></span>
+<span style="width: 4px; height: 22px; border-radius: 2px; background: {{accent}}"></span>
+<span style="width: 4px; height: 13px; border-radius: 2px; background: {{accent}}"></span>
+<span style="width: 4px; height: 7px; border-radius: 2px; background: {{accent}}"></span>
+</div>
+<span style="font-weight: 800; font-size: 15px">Poslouchám… řekni větu</span>
+</div>
+
+<div style="position: absolute; top: 20px; right: 20px; display: flex; align-items: center; gap: 10px">
+<button class="glass" aria-label="Režim zvuku: Papoušek ve sluchátkách" style="display: flex; align-items: center; gap: 8px; height: 56px; padding: 0 18px; border-radius: 28px; background: {{glass}}; border-color: {{line}}; color: {{ink}}">
+<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"></path><path d="M9 10h5a2.5 2.5 0 0 1 0 5h-4"></path><path d="M11 8l-2 2 2 2"></path></svg>
+<span style="font-weight: 800; font-size: 16px">Papoušek</span>
+<span aria-hidden="true" style="width: 1px; height: 22px; background: {{line}}"></span>
+<svg class="ico" viewBox="0 0 24 24" aria-hidden="true" style="width: 20px; height: 20px"><path d="M4 15v-3a8 8 0 0 1 16 0v3"></path><rect x="3" y="14" width="4" height="6" rx="1.5"></rect><rect x="17" y="14" width="4" height="6" rx="1.5"></rect></svg>
+<span style="font-weight: 700; font-size: 14px; color: {{soft}}">sluchátka</span>
+</button>
+<button class="glass" aria-label="Nastavení" style="width: 56px; height: 56px; border-radius: 28px; display: flex; align-items: center; justify-content: center; padding: 0; background: {{glass}}; border-color: {{line}}; color: {{ink}}">
+<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"></path><circle cx="16" cy="7" r="2"></circle><circle cx="10" cy="17" r="2"></circle></svg>
+</button>
+</div>
+
+<aside class="glass" aria-label="Ovládání obrazu" style="position: absolute; left: 20px; top: 96px; width: 300px; border-radius: 32px; padding: 20px; display: flex; flex-direction: column; gap: 14px; box-sizing: border-box; background: {{glass}}; border-color: {{line}}; color: {{ink}}">
+<span style="font-size: 13px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; color: {{soft}}">Režim obrazu</span>
+<div role="group" aria-label="Režim obrazu" style="display: flex; flex-direction: column; gap: 6px">
+<sc-for list="{{modes}}" as="m" hint-placeholder-count="4">
+<button aria-pressed="{{m.pressed}}" style="display: flex; align-items: center; gap: 12px; height: 52px; padding: 0 14px; border: 0; border-radius: 18px; font-weight: 800; font-size: 16px; text-align: left; background: {{m.bg}}; color: {{m.fg}}">
+<span style="width: 10px; height: 10px; border-radius: 5px; background: {{m.dot}}"></span>
+<span style="display: flex; flex-direction: column; line-height: 1.15">{{m.label}}<span style="font-size: 12px; font-weight: 700; opacity: 0.75">{{m.hint}}</span></span>
+</button>
+</sc-for>
+</div>
+<span aria-hidden="true" style="height: 1px; background: {{line}}"></span>
+<div style="display: flex; gap: 8px">
+<button aria-pressed="true" style="flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px; height: 42px; border-radius: 21px; border: 1px solid {{line}}; font-weight: 800; font-size: 14px; background: {{onBg}}; color: {{onInk}}">
+<svg class="ico" viewBox="0 0 24 24" aria-hidden="true" style="width: 18px; height: 18px"><circle cx="12" cy="12" r="9"></circle><path d="M9 10h.01M15 10h.01"></path><path d="M8.5 14.5a4.5 4.5 0 0 0 7 0"></path></svg>Obličej
+</button>
+<button aria-pressed="true" style="flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px; height: 42px; border-radius: 21px; border: 1px solid {{line}}; font-weight: 800; font-size: 14px; background: {{onBg}}; color: {{onInk}}">
+<svg class="ico" viewBox="0 0 24 24" aria-hidden="true" style="width: 18px; height: 18px"><rect x="9" y="3" width="6" height="11" rx="3"></rect><path d="M5 11a7 7 0 0 0 14 0M12 18v3"></path></svg>Hlas
+</button>
+</div>
+<div style="display: flex; align-items: baseline; justify-content: space-between">
+<span style="font-size: 14px; font-weight: 700; color: {{soft}}">Kolik táty</span>
+<span style="font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: 22px">80 %</span>
+</div>
+<label style="display: block; margin-top: -8px">
+<span class="sr">Kolik táty</span>
+<input type="range" min="0" max="100" step="5" value="80" style="width: 100%; height: 28px; margin: 0; accent-color: {{accent}}">
+</label>
+</aside>
+
+<nav class="glass" aria-label="Nahrávání a fotky" style="position: absolute; right: 20px; top: 50%; transform: translateY(-50%); width: 116px; border-radius: 40px; padding: 22px 0; display: flex; flex-direction: column; align-items: center; gap: 22px; background: {{glass}}; border-color: {{line}}; color: {{ink}}">
+<button aria-label="Otočit kameru" style="width: 56px; height: 56px; border-radius: 28px; border: 0; display: flex; align-items: center; justify-content: center; padding: 0; background: {{track}}; color: {{ink}}">
+<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"></path><path d="M9 13a3 3 0 0 1 5.1-2.1"></path><path d="M14.6 9.2v1.9h-1.9"></path><path d="M15 13a3 3 0 0 1-5.1 2.1"></path><path d="M9.4 16.8v-1.9h1.9"></path></svg>
+</button>
+<button aria-label="Nahrávat video" style="width: 92px; height: 92px; border-radius: 46px; border: 4px solid {{ring}}; padding: 0; display: flex; align-items: center; justify-content: center; background: transparent">
+<span style="width: 70px; height: 70px; border-radius: 35px; background: {{accent}}; box-shadow: 0 6px 18px rgba(0,0,0,0.25)"></span>
+</button>
+<button aria-label="Vyfotit" style="width: 56px; height: 56px; border-radius: 28px; border: 0; display: flex; align-items: center; justify-content: center; padding: 0; background: {{track}}; color: {{ink}}">
+<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"></path><circle cx="12" cy="13" r="3.5"></circle></svg>
+</button>
+<button aria-label="Galerie" style="width: 56px; height: 56px; border-radius: 18px; border: 2px solid {{ring}}; padding: 0; overflow: hidden; background: #3A2C33">
+<svg width="52" height="52" viewBox="0 0 52 52" aria-hidden="true" style="display: block"><rect width="52" height="52" fill="#3A2C33"></rect><path d="M8 52c2-9 9-12 18-12s16 3 18 12z" fill="#2F7F7A"></path><circle cx="26" cy="27" r="13" fill="#C98F6B"></circle><path d="M20 31.5c3 1.5 9 1.5 12 0" stroke="#4A2D1E" stroke-width="2.5" fill="none" stroke-linecap="round"></path><path d="M19 22h4M29 22h4" stroke="#3E2518" stroke-width="2.5" stroke-linecap="round"></path></svg>
+</button>
+</nav>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"svetly":{"editor":"boolean","default":false,"section":"Vzhled"},"accent":{"editor":"color","default":"#FF6B57","options":["#FF6B57","#8B5CF6","#14B8A6","#F59E0B"],"section":"Vzhled"},"$preview":{"width":1280,"height":800}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const light = !!this.props.svetly;
+    const t = light
+      ? { glass: 'rgba(255,255,255,0.72)', line: 'rgba(255,255,255,0.9)', ink: '#1B1724', soft: '#4A4458', onBg: '#1B1724', onInk: '#FFFFFF', track: 'rgba(27,23,36,0.08)', ring: '#1B1724' }
+      : { glass: 'rgba(22,18,30,0.42)', line: 'rgba(255,255,255,0.18)', ink: '#FFFFFF', soft: 'rgba(255,255,255,0.8)', onBg: '#FFFFFF', onInk: '#1B1724', track: 'rgba(255,255,255,0.12)', ring: '#FFFFFF' };
+    const accent = this.props.accent || '#FF6B57';
+    const list = [
+      ['Maska', 'tátův obličej na tvém'],
+      ['Loutka', 'tátova fotka dělá, co ty'],
+      ['Půl na půl', 'půlka ty, půlka táta'],
+      ['Před a po', 'vedle sebe']
+    ];
+    const modes = list.map((m, i) => ({
+      label: m[0],
+      hint: m[1],
+      pressed: i === 0 ? 'true' : 'false',
+      bg: i === 0 ? t.onBg : 'transparent',
+      fg: i === 0 ? t.onInk : t.ink,
+      dot: i === 0 ? accent : 'transparent'
+    }));
+    return Object.assign({}, t, { accent: accent, modes: modes });
+  }
+}
+</script>
+</body>
+</html>

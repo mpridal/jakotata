@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="cs">
+<head>
+<meta charset="utf-8">
+<title>JakoTáta – galerie</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&amp;family=Nunito:wght@600;700;800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#FF6B57}a:hover{color:#FF8A7A}
+.glass{-webkit-backdrop-filter:blur(22px) saturate(150%);backdrop-filter:blur(22px) saturate(150%);border:1px solid transparent;box-shadow:0 10px 34px rgba(0,0,0,0.22)}
+.ico{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;display:block;flex:none}
+button{font:inherit;color:inherit;cursor:pointer;margin:0}
+</style>
+</helmet>
+<div style="position: relative; width: 390px; height: 844px; overflow: hidden; background: #2B2333; font-family: Nunito, system-ui, sans-serif; color: {{ink}}">
+
+<svg width="390" height="844" viewBox="0 0 390 844" style="position: absolute; left: 0; top: 0; filter: blur(18px); transform: scale(1.1)" aria-hidden="true">
+<defs>
+<linearGradient id="wall" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2B2333"/><stop offset="1" stop-color="#3A2C33"/></linearGradient>
+<radialGradient id="lamp" cx="0.82" cy="0.2" r="0.6"><stop offset="0" stop-color="#FFB86B" stop-opacity="0.5"/><stop offset="1" stop-color="#FFB86B" stop-opacity="0"/></radialGradient>
+<radialGradient id="win" cx="0.05" cy="0.6" r="0.6"><stop offset="0" stop-color="#7FB2FF" stop-opacity="0.3"/><stop offset="1" stop-color="#7FB2FF" stop-opacity="0"/></radialGradient>
+</defs>
+<rect width="390" height="844" fill="url(#wall)"/>
+<rect width="390" height="844" fill="url(#lamp)"/>
+<rect width="390" height="844" fill="url(#win)"/>
+</svg>
+
+<header class="glass" style="position: absolute; top: 12px; left: 12px; right: 12px; border-radius: 28px; padding: 10px 10px 12px; display: flex; flex-direction: column; gap: 10px; background: {{glass}}; border-color: {{line}}; color: {{ink}}">
+<div style="display: flex; align-items: center; gap: 10px">
+<button aria-label="Zpět ke kameře" style="width: 44px; height: 44px; border-radius: 22px; border: 0; display: flex; align-items: center; justify-content: center; padding: 0; background: {{track}}; color: {{ink}}">
+<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 18l-6-6 6-6"></path></svg>
+</button>
+<h1 style="margin: 0; font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: 24px">Galerie</h1>
+<button style="margin-left: auto; height: 44px; border-radius: 22px; border: 0; display: flex; align-items: center; gap: 6px; padding: 0 14px; font-weight: 800; font-size: 14px; background: {{track}}; color: {{ink}}">
+<svg class="ico" viewBox="0 0 24 24" aria-hidden="true" style="width: 18px; height: 18px"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"></path></svg>Koš
+</button>
+</div>
+<div role="tablist" aria-label="Typ" style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px; padding: 4px; border-radius: 22px; background: {{track}}">
+<button role="tab" aria-selected="true" style="height: 38px; border: 0; border-radius: 18px; font-weight: 800; font-size: 14px; background: {{onBg}}; color: {{onInk}}">Videa · 6</button>
+<button role="tab" aria-selected="false" style="height: 38px; border: 0; border-radius: 18px; font-weight: 800; font-size: 14px; background: transparent; color: {{ink}}">Fotky · 11</button>
+</div>
+</header>
+
+<ul style="position: absolute; top: 148px; left: 12px; right: 12px; margin: 0; padding: 0; list-style: none; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px">
+<sc-for list="{{items}}" as="it" hint-placeholder-count="6">
+<li class="glass" style="border-radius: 22px; overflow: hidden; display: flex; flex-direction: column; background: {{glass}}; border-color: {{line}}; color: {{ink}}">
+<div style="position: relative; height: 196px">
+<svg width="100%" height="196" viewBox="0 0 178 196" preserveAspectRatio="xMidYMid slice" aria-hidden="true" style="display: block">
+<rect width="178" height="196" fill="{{it.bg}}"></rect>
+<path d="M89 40 C 54 40 40 70 42 110 C 44 140 48 160 58 176 L 120 176 C 130 160 134 140 136 110 C 138 70 124 40 89 40 Z" fill="{{it.hair}}"></path>
+<path d="M22 196 C 26 160 52 146 89 146 C 126 146 152 160 156 196 Z" fill="{{it.shirt}}"></path>
+<ellipse cx="89" cy="102" rx="38" ry="47" fill="#C98F6B"></ellipse>
+<path d="M70 92 C 75 88 82 88 86 90 M92 90 C 96 88 103 88 108 92" stroke="#3E2518" stroke-width="4" fill="none" stroke-linecap="round"></path>
+<path d="M76 121 C 82 117 86 118 89 120 C 92 118 96 117 102 121 C 96 123 92 123 89 122 C 86 123 82 123 76 121 Z" fill="#4A2D1E"></path>
+<path d="M80 128 C 85 134 93 134 98 128" stroke="#8E3436" stroke-width="3" fill="none" stroke-linecap="round"></path>
+</svg>
+<span style="position: absolute; left: 10px; bottom: 10px; display: flex; align-items: center; gap: 4px; height: 26px; padding: 0 9px; border-radius: 13px; font-size: 12px; font-weight: 800; background: rgba(0,0,0,0.5); color: #FFFFFF">
+<svg class="ico" viewBox="0 0 24 24" aria-hidden="true" style="width: 12px; height: 12px; fill: #FFFFFF; stroke: none"><path d="M8 5v14l11-7z"></path></svg>{{it.len}}
+</span>
+<span style="position: absolute; right: 8px; bottom: 10px; font-family: 'Baloo 2', sans-serif; font-weight: 700; font-size: 10px; color: rgba(255,255,255,0.85)">JakoTáta</span>
+</div>
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 6px; padding: 9px 12px 11px">
+<span style="font-size: 13px; font-weight: 800">{{it.when}}</span>
+<span style="font-size: 12px; font-weight: 800; padding: 2px 8px; border-radius: 10px; background: {{track}}; color: {{soft}}">{{it.mode}}</span>
+</div>
+</li>
+</sc-for>
+</ul>
+
+<div class="glass" style="position: absolute; left: 50%; bottom: 16px; transform: translateX(-50%); display: flex; align-items: center; gap: 8px; height: 40px; padding: 0 16px; border-radius: 20px; white-space: nowrap; font-size: 13px; font-weight: 800; background: {{glass}}; border-color: {{line}}; color: {{ink}}">
+<svg class="ico" viewBox="0 0 24 24" aria-hidden="true" style="width: 18px; height: 18px"><rect x="5" y="11" width="14" height="9" rx="2"></rect><path d="M8 11V8a4 4 0 0 1 8 0v3"></path></svg>
+Uloženo jen v tomto zařízení
+</div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"svetly":{"editor":"boolean","default":false,"section":"Vzhled"},"accent":{"editor":"color","default":"#FF6B57","options":["#FF6B57","#8B5CF6","#14B8A6","#F59E0B"],"section":"Vzhled"},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const light = !!this.props.svetly;
+    const t = light
+      ? { glass: 'rgba(255,255,255,0.74)', line: 'rgba(255,255,255,0.9)', ink: '#1B1724', soft: '#4A4458', onBg: '#1B1724', onInk: '#FFFFFF', track: 'rgba(27,23,36,0.08)' }
+      : { glass: 'rgba(22,18,30,0.46)', line: 'rgba(255,255,255,0.18)', ink: '#FFFFFF', soft: 'rgba(255,255,255,0.8)', onBg: '#FFFFFF', onInk: '#1B1724', track: 'rgba(255,255,255,0.12)' };
+    const items = [
+      { bg: '#3A2C33', hair: '#5A3826', shirt: '#2F7F7A', len: '0:42', when: 'Dnes 15:32', mode: 'Maska' },
+      { bg: '#2E3A4A', hair: '#5A3826', shirt: '#B85C7A', len: '1:15', when: 'Dnes 15:20', mode: 'Loutka' },
+      { bg: '#4A3A2A', hair: '#3B2A20', shirt: '#34507A', len: '0:18', when: 'Včera', mode: 'Půl na půl' },
+      { bg: '#2F3B33', hair: '#5A3826', shirt: '#E0A43A', len: '0:56', when: 'Včera', mode: 'Maska' },
+      { bg: '#3A2C33', hair: '#6A4330', shirt: '#2F7F7A', len: '2:00', when: '18. 11.', mode: 'Před a po' },
+      { bg: '#2E3A4A', hair: '#5A3826', shirt: '#7A5CC8', len: '0:31', when: '16. 11.', mode: 'Maska' }
+    ];
+    return Object.assign({}, t, { accent: this.props.accent || '#FF6B57', items: items });
+  }
+}
+</script>
+</body>
+</html>
