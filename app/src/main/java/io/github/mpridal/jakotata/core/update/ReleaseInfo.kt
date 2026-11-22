@@ -39,7 +39,9 @@ data class ReleaseInfo(
 sealed interface UpdateCheck {
     data object NotChecked : UpdateCheck
     data object UpToDate : UpdateCheck
-    data class Failed(val reason: String) : UpdateCheck
+    /** Proč kontrola selhala – každý důvod má v UI vlastní hlášku. */
+    enum class FailReason { NO_RELEASE, OFFLINE, ERROR }
+    data class Failed(val reason: FailReason, val detail: String = "") : UpdateCheck
     data class Available(val release: ReleaseInfo, val mandatory: Boolean) : UpdateCheck
 
     companion object {

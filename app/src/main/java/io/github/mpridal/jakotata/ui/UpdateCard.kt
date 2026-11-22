@@ -58,6 +58,15 @@ fun UpdateCard(result: UpdateCheck, service: UpdateService, onClose: () -> Unit)
                     Text(stringResource(R.string.update_up_to_date), style = MaterialTheme.typography.titleLarge, color = c.onGlass)
                     PillButton(stringResource(R.string.action_close), primary = false, enabled = true, onClick = onClose)
                 }
+                is UpdateCheck.Failed -> {
+                    val msg = when (result.reason) {
+                        UpdateCheck.FailReason.NO_RELEASE -> R.string.update_no_release
+                        UpdateCheck.FailReason.OFFLINE -> R.string.update_offline
+                        UpdateCheck.FailReason.ERROR -> R.string.update_check_failed
+                    }
+                    Text(stringResource(msg), style = MaterialTheme.typography.titleLarge, color = c.onGlass)
+                    PillButton(stringResource(R.string.action_close), primary = false, enabled = true, onClick = onClose)
+                }
                 else -> {
                     Text(stringResource(R.string.update_check_failed), style = MaterialTheme.typography.titleLarge, color = c.onGlass)
                     PillButton(stringResource(R.string.action_close), primary = false, enabled = true, onClick = onClose)

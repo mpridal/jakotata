@@ -33,6 +33,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -62,7 +63,7 @@ import kotlin.random.Random
 @Composable
 fun SettingsScreen(state: CameraState, settings: Settings, onCheckUpdate: () -> Unit, onClose: () -> Unit) {
     val scope = rememberCoroutineScope()
-    var parentOpen by remember { mutableStateOf(false) }
+    var parentOpen by rememberSaveable { mutableStateOf(false) }
     fun update(t: (Settings) -> Settings) { scope.launch { state.settings.update(t) } }
     val c = JakoTheme.colors
 
@@ -114,10 +115,10 @@ fun SettingsScreen(state: CameraState, settings: Settings, onCheckUpdate: () -> 
 @Composable
 private fun ParentZone(state: CameraState, settings: Settings, update: ((Settings) -> Settings) -> Unit) {
     val c = JakoTheme.colors
-    val a = remember { Random.nextInt(6, 10) }
-    val b = remember { Random.nextInt(11, 19) }
-    var answer by remember { mutableStateOf("") }
-    var unlocked by remember { mutableStateOf(false) }
+    val a = rememberSaveable { Random.nextInt(6, 10) }
+    val b = rememberSaveable { Random.nextInt(11, 19) }
+    var answer by rememberSaveable { mutableStateOf("") }
+    var unlocked by rememberSaveable { mutableStateOf(false) }
     if (!unlocked) {
         Text(stringResource(R.string.parent_gate, a, b), style = MaterialTheme.typography.titleLarge, color = c.onGlass)
         OutlinedTextField(

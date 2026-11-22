@@ -73,7 +73,6 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.ui.platform.LocalConfiguration
 import io.github.mpridal.jakotata.core.record.MediaItem
 import io.github.mpridal.jakotata.ui.components.JakoIcons
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -292,8 +291,10 @@ fun MainScreen() {
                     }
                 }
             }
-            BoxWithConstraints(Modifier.fillMaxSize().safeDrawingPadding().padding(JakoDimens.gutter)) {
-                if (maxWidth > maxHeight) {
+            Box(Modifier.fillMaxSize().safeDrawingPadding().padding(JakoDimens.gutter)) {
+                // Podle orientace zařízení, ne podle volné plochy: otevřená klávesnice plochu zmenší
+                // a rozložení by se přepnulo (obrazovka by se přestavěla a ztratila stav, např. rodičovskou zónu).
+                if (!portrait) {
                     // Na šířku (tablet): panel vlevo, tlačítka vpravo (návrh UI: Viktoriin tablet).
                     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         topBar()

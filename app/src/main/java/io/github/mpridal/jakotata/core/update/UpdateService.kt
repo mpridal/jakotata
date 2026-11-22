@@ -27,13 +27,19 @@ class UpdateService(private val context: Context, private val current: AppVersio
                 val last = prefs.getLong(LAST_CHECK, 0L)
                 if (System.currentTimeMillis() - last < INTERVAL_MS) return@withContext UpdateCheck.NotChecked
             }
-            val release = fetchLatest() ?: return@withContext UpdateCheck.Failed("no usable release")
+            val release = fetchLatest() ?: return@withContext UpdateCheck.Failed(UpdateCheck.FailReason.NO_RELEASE)
             val result = UpdateCheck.evaluate(release, current)
             if (result is UpdateCheck.UpToDate) prefs.edit().putLong(LAST_CHECK, System.currentTimeMillis()).apply()
             result
+        } catch (e: NoReleaseException) {
+            UpdateCheck.Failed(UpdateCheck.FailReason.NO_RELEASE)
+        } catch (e: java.io.IOException) {
+            // DNS, timeout, bez sítě.
+            Log.i(TAG, "Update check offline: $e")
+            UpdateCheck.Failed(UpdateCheck.FailReason.OFFLINE, e.toString())
         } catch (e: Exception) {
             Log.i(TAG, "Update check failed: $e")
-            UpdateCheck.Failed(e.toString())
+            UpdateCheck.Failed(UpdateCheck.FailReason.ERROR, e.toString())
         }
     }
 
@@ -101,8 +107,12 @@ class UpdateService(private val context: Context, private val current: AppVersio
             readTimeout = timeoutMs
             setRequestProperty("Accept", "application/vnd.github+json")
             setRequestProperty("User-Agent", "JakoTata-Android")
+            // 404 na releases/latest = v repozitáři zatím není žádné vydání.
+            if (responseCode == 404) throw NoReleaseException()
             if (responseCode !in 200..299) throw IllegalStateException("HTTP $responseCode for $url")
         }
+
+    private class NoReleaseException : Exception()
 
     private companion object {
         const val TAG = "UpdateService"

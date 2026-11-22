@@ -117,8 +117,10 @@
     <string name="update_later">Later</string>
     <string name="update_failed">Download failed or the file is damaged. Try again later.</string>
     <string name="update_up_to_date">You have the latest version.</string>
-    <string name="update_check_failed">Could not check for updates (offline?).</string>
+    <string name="update_check_failed">Checking for updates failed. Try again later.</string>
 
+    <string name="update_no_release">No version has been published for download yet.</string>
+    <string name="update_offline">No internet connection. Checking for updates needs the internet.</string>
     <plurals name="seconds">
         <item quantity="one">%d second</item>
         <item quantity="other">%d seconds</item>

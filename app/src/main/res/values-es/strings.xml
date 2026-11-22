@@ -115,8 +115,10 @@
     <string name="update_later">Más tarde</string>
     <string name="update_failed">La descarga falló o el archivo está dañado. Inténtalo más tarde.</string>
     <string name="update_up_to_date">Tienes la última versión.</string>
-    <string name="update_check_failed">No se pudo comprobar (¿sin internet?).</string>
+    <string name="update_check_failed">No se pudieron buscar actualizaciones. Inténtalo más tarde.</string>
 
+    <string name="update_no_release">Todavía no hay ninguna versión publicada para descargar.</string>
+    <string name="update_offline">Sin conexión a internet. Buscar actualizaciones necesita internet.</string>
     <plurals name="seconds">
         <item quantity="one">%d segundo</item>
         <item quantity="many">%d segundos</item>
