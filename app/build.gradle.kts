@@ -14,7 +14,7 @@ val keystoreProps = Properties().apply {
 val releaseAbiOnly = project.hasProperty("releaseAbiOnly")
 
 // versionCode = major·10000 + minor·100 + patch (zadání kap. 9)
-val appVersionName = "0.1.0"
+val appVersionName = "0.1.1"
 val appVersionCode = appVersionName.split(".").map(String::toInt).let { v -> v[0] * 10000 + v[1] * 100 + v[2] }
 
 android {
@@ -62,6 +62,8 @@ android {
     buildTypes {
         release {
             signingConfigs.findByName("release")?.let { signingConfig = it }
+            // Jen lokální kontrola zmenšeného buildu (R8): ./gradlew assembleRelease -PdebugSignedRelease
+            if (project.hasProperty("debugSignedRelease")) signingConfig = signingConfigs.getByName("debug")
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
