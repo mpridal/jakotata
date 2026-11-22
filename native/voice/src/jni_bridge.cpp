@@ -56,6 +56,17 @@ JNIEXPORT jfloat JNICALL JNI_FN(nativeKidF0)(JNIEnv*, jobject) { return engine()
 JNIEXPORT jfloat JNICALL JNI_FN(nativeLiveLatencyMs)(JNIEnv*, jobject) { return engine().liveLatencyMs(); }
 JNIEXPORT jint JNICALL JNI_FN(nativeMeasureRoundTrip)(JNIEnv*, jobject) { return engine().measureRoundTripMs(); }
 
+JNIEXPORT void JNICALL JNI_FN(nativeSetRecording)(JNIEnv*, jobject, jboolean on) { engine().setRecording(on); }
+JNIEXPORT jlong JNICALL JNI_FN(nativeRecordingStartNs)(JNIEnv*, jobject) { return engine().recordingStartNs(); }
+JNIEXPORT jlong JNICALL JNI_FN(nativeRecordingLatencyNs)(JNIEnv*, jobject) { return engine().recordingLatencyNs(); }
+JNIEXPORT jint JNICALL JNI_FN(nativeReadRecording)(JNIEnv* env, jobject, jfloatArray dst) {
+    jsize max = env->GetArrayLength(dst);
+    jfloat* d = env->GetFloatArrayElements(dst, nullptr);
+    int n = engine().readRecording(d, max);
+    env->ReleaseFloatArrayElements(dst, d, 0);
+    return n;
+}
+
 JNIEXPORT jfloatArray JNICALL JNI_FN(nativeAnalyze)(JNIEnv* env, jobject, jfloatArray pcm, jint sampleRate) {
     jsize n = env->GetArrayLength(pcm);
     jfloat* d = env->GetFloatArrayElements(pcm, nullptr);

@@ -80,6 +80,14 @@ class VoiceEngine(context: Context) {
     /** Round-trip test latence (cvaknutí z reproduktoru → mikrofon), blokuje až 2 s – volat mimo UI vlákno. */
     fun measureRoundTripMs(): Int = if (running) NativeVoice.nativeMeasureRoundTrip() else -1
 
+    /** Nahrávací cesta převedeného hlasu pro video (zadání kap. 4.1). */
+    fun setRecording(on: Boolean) { if (NativeVoice.loaded) NativeVoice.nativeSetRecording(on) }
+    fun readRecording(dst: FloatArray): Int = if (running) NativeVoice.nativeReadRecording(dst) else 0
+    /** CLOCK_MONOTONIC [ns] prvního nahraného vzorku; 0 dokud není známý. */
+    fun recordingStartNs(): Long = if (NativeVoice.loaded) NativeVoice.nativeRecordingStartNs() else 0L
+    fun recordingLatencyNs(): Long = if (NativeVoice.loaded) NativeVoice.nativeRecordingLatencyNs() else 0L
+    val isRunning: Boolean get() = running
+
     private fun onDevicesChanged() {
         _output.value = currentOutput()
         applyMode()

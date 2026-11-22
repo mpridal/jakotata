@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <chrono>
 #include <cmath>
+#include <ctime>
 
 #define LOG_TAG "JakoAudio"
 #define LOGI(...) __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
@@ -111,6 +112,11 @@ bool AudioEngine::openStreams() {
     tracker_.setup(sampleRate_, 250.f, kKidFormants);
     live_.setup(sampleRate_, true, kMaxBlock);
     hq_.setup(sampleRate_, false, kMaxBlock);
+    // Nahrávací cesta: stejný malý blok jako živý poslech (šetří CPU, běží v callbacku).
+    rec_.setup(sampleRate_, true, kMaxBlock);
+    recRing_.assign(static_cast<size_t>(sampleRate_ * 4), 0.f);
+    recScratch_.assign(kMaxBlock * 2, 0.f);
+    zeros_.assign(kMaxBlock * 2, 0.f);
     {
         std::lock_guard<std::mutex> g(dadLock_);
         dad_ = pendingDad_;
@@ -118,6 +124,7 @@ bool AudioEngine::openStreams() {
     }
     live_.setParams(dad_);
     hq_.setParams(dad_);
+    rec_.setParams(dad_);
     vad_.setup(0.01f, 0.6f);
     vadFill_ = 0;
     vadEnergy_ = 0.f;
@@ -144,6 +151,33 @@ void AudioEngine::onErrorAfterClose(oboe::AudioStream*, oboe::Result error) {
         stopEngine();
         startEngine();
     }).detach();
+}
+
+void AudioEngine::setRecording(bool on) {
+    if (on) {
+        recStartNs_.store(0);
+        recRead_.store(recWrite_.load());
+        rec_.reset();
+        recNeedStamp_ = true;
+    }
+    recording_.store(on);
+}
+
+int AudioEngine::readRecording(float* dst, int max) {
+    uint32_t r = recRead_.load(std::memory_order_relaxed);
+    uint32_t w = recWrite_.load(std::memory_order_acquire);
+    const uint32_t cap = static_cast<uint32_t>(recRing_.size());
+    if (cap == 0) return 0;
+    uint32_t avail = w - r;
+    if (avail > cap) { r = w - cap; avail = cap; }  // přetečení: nejstarší vzorky se zahodí
+    int n = static_cast<int>(std::min<uint32_t>(avail, static_cast<uint32_t>(max)));
+    for (int i = 0; i < n; ++i) dst[i] = recRing_[(r + i) % cap];
+    recRead_.store(r + n, std::memory_order_relaxed);
+    return n;
+}
+
+int64_t AudioEngine::recordingLatencyNs() const {
+    return static_cast<int64_t>(rec_.latencySamples() * 1e9 / sampleRate_);
 }
 
 float AudioEngine::liveLatencyMs() const {
@@ -179,6 +213,7 @@ oboe::DataCallbackResult AudioEngine::onBothStreamsReady(const void* inputData, 
         dadChanged_.store(false);
         dadLock_.unlock();
         live_.setParams(dad_);
+        rec_.setParams(dad_);
     }
 
     // Úroveň vstupu pro měřič.
@@ -220,6 +255,30 @@ oboe::DataCallbackResult AudioEngine::onBothStreamsReady(const void* inputData, 
         for (int k = 0; k < 3; ++k) kidFormants_[k].store(f[k]);
     }
     const float amount = voiceOn_.load() ? amount_.load() : 0.f;
+
+    // Nahrávka má vždy převedený hlas; během přehrávání Papouška ticho (jinak by se nahrála ozvěna).
+    if (recording_.load() && n <= static_cast<int>(zeros_.size())) {
+        if (recNeedStamp_) {
+            recNeedStamp_ = false;
+            int64_t startNs = 0;
+            auto ts = in_ ? in_->getTimestamp(CLOCK_MONOTONIC) : oboe::ResultWithValue<oboe::FrameTimestamp>(oboe::Result::ErrorNull);
+            if (ts) {
+                int64_t firstFrame = in_->getFramesRead() - n;
+                startNs = ts.value().timestamp + (firstFrame - ts.value().position) * 1000000000LL / static_cast<int64_t>(sampleRate_);
+            } else {
+                timespec now{};
+                clock_gettime(CLOCK_MONOTONIC, &now);
+                startNs = now.tv_sec * 1000000000LL + now.tv_nsec - static_cast<int64_t>(n * 1e9 / sampleRate_);
+            }
+            recStartNs_.store(startNs);
+        }
+        rec_.updateShift(kidF0_.load(), {kidFormants_[0].load(), kidFormants_[1].load(), kidFormants_[2].load()}, amount);
+        rec_.process(parrotBusy ? zeros_.data() : in, recScratch_.data(), n);
+        uint32_t w = recWrite_.load(std::memory_order_relaxed);
+        const uint32_t cap = static_cast<uint32_t>(recRing_.size());
+        for (int i = 0; i < n; ++i) recRing_[(w + i) % cap] = recScratch_[i];
+        recWrite_.store(w + n, std::memory_order_release);
+    }
 
     switch (mode) {
         case SoundMode::Headphones:

@@ -63,6 +63,14 @@
     <string name="voice_err_noisy">Kolem je moc hluku – najdi tišší místo.</string>
     <string name="latency_test">Latence</string>
 
+    <string name="recording_timer">Nahrává se, %1$d z %2$d sekund</string>
+    <string name="saved_video">Video je v galerii</string>
+    <string name="saved_photo">Fotka je v galerii</string>
+    <string name="action_play">Přehrát</string>
+    <string name="action_share">Sdílet</string>
+    <string name="action_trash">Do koše</string>
+    <string name="gallery_empty">Zatím tu nic není. Natoč video nebo se vyfoť!</string>
+
     <plurals name="seconds">
         <item quantity="one">%d sekunda</item>
         <item quantity="few">%d sekundy</item>

@@ -46,6 +46,15 @@ public:
     /** Round-trip test: cvaknutí z reproduktoru → mikrofon [ms], −1 při neúspěchu. Blokuje až 2 s. */
     int measureRoundTripMs();
 
+    // Nahrávání videa (zadání kap. 4.1): převedený hlas do kruhového bufferu + čas prvního vzorku.
+    void setRecording(bool on);
+    /** Přečte až max vzorků převedeného hlasu; vrací počet. Volat z jednoho vlákna. */
+    int readRecording(float* dst, int max);
+    /** CLOCK_MONOTONIC [ns] prvního nahraného vzorku (vstupu do mikrofonu), 0 dokud není známý. */
+    int64_t recordingStartNs() const { return recStartNs_.load(); }
+    /** Latence převodu v nahrávací cestě [ns] – odečíst od času zvuku. */
+    int64_t recordingLatencyNs() const;
+
     oboe::DataCallbackResult onBothStreamsReady(const void* inputData, int numInputFrames, void* outputData,
                                                 int numOutputFrames) override;
     void onErrorAfterClose(oboe::AudioStream* stream, oboe::Result error) override;
@@ -96,6 +105,17 @@ private:
     std::condition_variable workCv_;
     bool workPending_ = false;
     bool quit_ = false;
+
+    // Nahrávání.
+    VoiceConverter rec_;
+    std::atomic<bool> recording_{false};
+    bool recNeedStamp_ = false;
+    std::atomic<int64_t> recStartNs_{0};
+    std::vector<float> recRing_;
+    std::atomic<uint32_t> recWrite_{0};
+    std::atomic<uint32_t> recRead_{0};
+    std::vector<float> recScratch_;
+    std::vector<float> zeros_;
 
     // Test latence.
     std::atomic<int> latState_{0};  // 0 nic, 1 vyslat cvaknutí, 2 čekat na vstup

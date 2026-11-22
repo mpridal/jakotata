@@ -63,6 +63,14 @@
     <string name="voice_err_noisy">Hay demasiado ruido: busca un lugar más tranquilo.</string>
     <string name="latency_test">Latencia</string>
 
+    <string name="recording_timer">Grabando, %1$d de %2$d segundos</string>
+    <string name="saved_video">Vídeo guardado en la galería</string>
+    <string name="saved_photo">Foto guardada en la galería</string>
+    <string name="action_play">Reproducir</string>
+    <string name="action_share">Compartir</string>
+    <string name="action_trash">A la papelera</string>
+    <string name="gallery_empty">Aquí aún no hay nada. ¡Graba un vídeo o hazte una foto!</string>
+
     <plurals name="seconds">
         <item quantity="one">%d segundo</item>
         <item quantity="many">%d segundos</item>

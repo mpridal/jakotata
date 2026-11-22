@@ -19,6 +19,9 @@ import io.github.mpridal.jakotata.core.profile.FaceProfile
 import io.github.mpridal.jakotata.core.profile.FaceProfileBuilder
 import io.github.mpridal.jakotata.core.profile.ProfileStore
 import io.github.mpridal.jakotata.core.render.CameraRenderer
+import io.github.mpridal.jakotata.core.record.MediaLibrary
+import io.github.mpridal.jakotata.core.record.MediaSaver
+import io.github.mpridal.jakotata.core.record.RecordingSession
 import io.github.mpridal.jakotata.core.render.MaskTopology
 import io.github.mpridal.jakotata.core.voice.VoiceEngine
 import io.github.mpridal.jakotata.core.voice.VoiceProfile
@@ -43,6 +46,38 @@ class CameraState(private val context: Context) {
     val camera = CameraSource(context)
     val voice = VoiceEngine(context)
     private val store = ProfileStore(context)
+    val library = MediaLibrary(context)
+    private val saver = MediaSaver(context)
+    private var session: RecordingSession? = null
+
+    init {
+        renderer.setWatermark(watermarkBitmap(context))
+    }
+
+    /** Rozměry videa/fotky podle orientace obrazovky: 720p (zadání kap. 5). */
+    fun outputSize(portrait: Boolean): Pair<Int, Int> = if (portrait) 720 to 1280 else 1280 to 720
+
+    /** Začne nahrávat video (obraz s maskou + převedený hlas). */
+    suspend fun startRecording(portrait: Boolean): Boolean = withContext(Dispatchers.Default) {
+        if (session != null) return@withContext true  // nikdy dvě nahrávání najednou
+        val (w, h) = outputSize(portrait)
+        val s = RecordingSession(saver, renderer, voice, w, h)
+        if (s.start()) { session = s; true } else false
+    }
+
+    /** Zastaví a uloží video do galerie. */
+    suspend fun stopRecording(): Uri? = withContext(Dispatchers.Default) {
+        val s = session ?: return@withContext null
+        session = null
+        s.stop()
+    }
+
+    /** Fotka s maskou a vodoznakem do galerie. */
+    suspend fun takePhoto(portrait: Boolean): Uri? {
+        val (w, h) = outputSize(portrait)
+        val bmp = suspendCancellableCoroutine<Bitmap?> { cont -> renderer.capturePhoto(w, h) { cont.resume(it) } } ?: return null
+        return withContext(Dispatchers.IO) { saver.savePhoto(bmp) }
+    }
 
     var profile: FaceProfile? by mutableStateOf(null)
         private set
@@ -108,6 +143,8 @@ class CameraState(private val context: Context) {
     }
 
     fun release() {
+        session?.stop()
+        session = null
         voice.stop()
         camera.release()
         renderer.release()
@@ -116,6 +153,25 @@ class CameraState(private val context: Context) {
 
     private companion object {
         const val MAX_PHOTO = 1600
+
+        /** Vodoznak „JakoTáta“ (zadání kap. 8): bílý text na tmavé poloprůhledné pilulce. */
+        fun watermarkBitmap(context: Context): Bitmap {
+            val w = 480; val h = 120
+            val bmp = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
+            val canvas = android.graphics.Canvas(bmp)
+            val scrim = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply { color = 0x52000000 }
+            canvas.drawRoundRect(0f, 0f, w.toFloat(), h.toFloat(), h / 2.5f, h / 2.5f, scrim)
+            val text = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
+                color = 0xE6FFFFFF.toInt()
+                textSize = h * 0.55f
+                textAlign = android.graphics.Paint.Align.CENTER
+                typeface = androidx.core.content.res.ResourcesCompat.getFont(context, io.github.mpridal.jakotata.R.font.baloo2)
+                    ?.let { android.graphics.Typeface.create(it, android.graphics.Typeface.BOLD) }
+            }
+            val y = h / 2f - (text.descent() + text.ascent()) / 2f
+            canvas.drawText("JakoTáta", w / 2f, y, text)
+            return bmp
+        }
     }
 }
 

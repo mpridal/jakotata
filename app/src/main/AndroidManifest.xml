@@ -6,6 +6,9 @@
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <!-- Jen pro volitelnou kontrolu aktualizací (zadání kap. 8). -->
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Ukládání do galerie a čtení vlastních nahrávek jen na Androidu 8–9; od 10 přes MediaStore bez oprávnění. -->
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="28" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="28" />
 
     <uses-feature android:name="android.hardware.camera.any" android:required="true" />
     <uses-feature android:name="android.hardware.microphone" android:required="true" />

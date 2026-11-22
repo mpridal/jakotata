@@ -69,6 +69,10 @@ import io.github.mpridal.jakotata.ui.components.GlassBox
 import io.github.mpridal.jakotata.ui.components.LocalHazeState
 import io.github.mpridal.jakotata.ui.theme.JakoDimens
 import io.github.mpridal.jakotata.ui.theme.JakoTheme
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.ui.platform.LocalConfiguration
+import io.github.mpridal.jakotata.core.record.MediaItem
+import io.github.mpridal.jakotata.ui.components.JakoIcons
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
@@ -109,6 +113,43 @@ fun MainScreen() {
     var dadEyes by rememberSaveable { mutableStateOf(false) }
     var sheetOpen by rememberSaveable { mutableStateOf(false) }
     var voiceSheetOpen by rememberSaveable { mutableStateOf(false) }
+    var galleryOpen by rememberSaveable { mutableStateOf(false) }
+    var countdown by remember { mutableIntStateOf(0) }
+    var recording by remember { mutableStateOf(false) }
+    var elapsed by remember { mutableIntStateOf(0) }
+    var lastItem by remember { mutableStateOf<MediaItem?>(null) }
+    val scope = rememberCoroutineScope()
+    val portrait = LocalConfiguration.current.orientation != android.content.res.Configuration.ORIENTATION_LANDSCAPE
+
+    fun stopRecording() {
+        if (!recording) return
+        recording = false
+        scope.launch {
+            val uri = state.stopRecording()
+            if (uri != null) lastItem = MediaItem(uri, isVideo = true, dateAddedSec = System.currentTimeMillis() / 1000, durationMs = elapsed * 1000L)
+        }
+    }
+
+    // Odpočet 3-2-1, pak start; časovač a automatické zastavení po max. délce (zadání kap. 6.4).
+    LaunchedEffect(countdown) {
+        if (countdown > 0) {
+            delay(1000)
+            if (countdown == 1) {
+                // Start mimo tento efekt: změna `countdown` efekt zruší, start ale musí doběhnout
+                // a výsledek se musí zapsat (jinak by nahrávání běželo a UI o něm nevědělo).
+                elapsed = 0
+                scope.launch { recording = state.startRecording(portrait) }
+                countdown = 0
+            } else countdown -= 1
+        }
+    }
+    LaunchedEffect(recording) {
+        while (recording) {
+            delay(1000)
+            elapsed += 1
+            if (elapsed >= MAX_RECORDING_SEC) stopRecording()
+        }
+    }
     val hazeState = remember { HazeState() }
     val c = JakoTheme.colors
 
@@ -145,11 +186,15 @@ fun MainScreen() {
                         ProfileChip(state) { sheetOpen = true }
                         if (hasMic) SoundModeChip(state)
                     }
-                    if (hasMic && voiceOn) ParrotPill(state)
+                    if (recording) RecordingPill(elapsed, MAX_RECORDING_SEC)
+                    else if (hasMic && voiceOn) ParrotPill(state)
                     if (BuildConfig.DEBUG) DebugOverlay(state, showMesh) { showMesh = !showMesh }
                 }
                 when {
                     !hasCamera || !hasMic -> PermissionCard { launcher.launch(permissions) }
+                    countdown > 0 -> CountdownOverlay(countdown)
+                    galleryOpen -> GalleryScreen(state.library) { galleryOpen = false }
+                    lastItem != null && !recording -> ResultCard(lastItem!!, state.library) { lastItem = null }
                     voiceSheetOpen -> VoiceSheet(state) { voiceSheetOpen = false }
                     sheetOpen || state.profile == null -> ProfileSheet(
                         state, canClose = state.profile != null,
@@ -163,6 +208,21 @@ fun MainScreen() {
                     amount = amount, onAmount = { amount = it },
                     dadEyes = dadEyes, onDadEyes = { dadEyes = it },
                     onSwitchCamera = { front = !front },
+                    recording = recording || countdown > 0,
+                    onRecord = {
+                        when {
+                            recording -> stopRecording()
+                            countdown > 0 -> countdown = 0
+                            else -> { lastItem = null; galleryOpen = false; countdown = 3 }
+                        }
+                    },
+                    onPhoto = {
+                        scope.launch {
+                            val uri = state.takePhoto(portrait)
+                            if (uri != null) lastItem = MediaItem(uri, isVideo = false, dateAddedSec = System.currentTimeMillis() / 1000, durationMs = 0)
+                        }
+                    },
+                    onGallery = { lastItem = null; galleryOpen = !galleryOpen },
                 )
             }
         }
@@ -332,6 +392,10 @@ private fun ControlPanel(
     amount: Float, onAmount: (Float) -> Unit,
     dadEyes: Boolean, onDadEyes: (Boolean) -> Unit,
     onSwitchCamera: () -> Unit,
+    recording: Boolean,
+    onRecord: () -> Unit,
+    onPhoto: () -> Unit,
+    onGallery: () -> Unit,
 ) {
     val c = JakoTheme.colors
     val recordLabel = stringResource(R.string.action_record)
@@ -352,23 +416,40 @@ private fun ControlPanel(
                 colors = SliderDefaults.colors(thumbColor = c.accentStart, activeTrackColor = c.accentStart),
             )
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                Box(Modifier.size(JakoDimens.pill))
-                Box(Modifier.size(JakoDimens.recordButton).clip(CircleShape).background(c.onGlass.copy(alpha = 0.15f))) {
-                    Box(
-                        Modifier.align(Alignment.Center).size(JakoDimens.recordButton - 20.dp)
-                            .background(c.accent, CircleShape).semantics { contentDescription = recordLabel },
-                    )
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    IconCircle(JakoIcons.Gallery, stringResource(R.string.action_gallery), enabled = !recording, onClick = onGallery)
+                    IconCircle(JakoIcons.Camera, stringResource(R.string.action_photo), enabled = true, onClick = onPhoto)
                 }
+                // Tlačítko nahrávání: kruh → zaoblený čtverec při nahrávání (zadání kap. 7).
+                val stopLabel = stringResource(R.string.action_stop)
+                val inner by androidx.compose.animation.core.animateDpAsState(if (recording) 34.dp else JakoDimens.recordButton - 20.dp, label = "rec")
+                val corner by androidx.compose.animation.core.animateIntAsState(if (recording) 28 else 50, label = "corner")
                 Box(
-                    Modifier.size(JakoDimens.pill).clip(CircleShape).background(c.onGlass.copy(alpha = 0.12f))
-                        .clickable(role = Role.Button, onClick = onSwitchCamera)
-                        .semantics { contentDescription = switchLabel },
+                    Modifier.size(JakoDimens.recordButton).clip(CircleShape).background(c.onGlass.copy(alpha = 0.15f))
+                        .clickable(role = Role.Button, onClick = onRecord)
+                        .semantics { contentDescription = if (recording) stopLabel else recordLabel },
                     contentAlignment = Alignment.Center,
                 ) {
-                    Text("⟲", fontSize = 24.sp, color = c.onGlass)
+                    Box(Modifier.size(inner).background(if (recording) c.recording else c.accentStart, RoundedCornerShape(corner)))
+                }
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Spacer(Modifier.size(JakoDimens.pill))
+                    IconCircle(JakoIcons.SwitchCamera, switchLabel, enabled = !recording, onClick = onSwitchCamera)
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun IconCircle(icon: androidx.compose.ui.graphics.vector.ImageVector, label: String, enabled: Boolean, onClick: () -> Unit) {
+    val c = JakoTheme.colors
+    Box(
+        Modifier.size(JakoDimens.pill).clip(CircleShape).background(c.onGlass.copy(alpha = if (enabled) 0.12f else 0.05f))
+            .clickable(enabled = enabled, role = Role.Button, onClick = onClick),
+        contentAlignment = Alignment.Center,
+    ) {
+        androidx.compose.material3.Icon(icon, contentDescription = label, tint = c.onGlass.copy(alpha = if (enabled) 1f else 0.4f))
     }
 }
 
@@ -437,3 +518,6 @@ private fun PermissionCard(onRequest: () -> Unit) {
         }
     }
 }
+
+/** Max. délka nahrávky (zadání kap. 6.4; nastavitelné v milníku 8). */
+private const val MAX_RECORDING_SEC = 120

@@ -51,6 +51,19 @@ class CameraRenderer(
 
     private val mask = MaskPass(maskTopology)
 
+    // Nahrávání videa: druhý výstup do vstupní Surface enkodéru (zadání kap. 4).
+    private var encoder: EGLSurface = EGL14.EGL_NO_SURFACE
+    private var encW = 0
+    private var encH = 0
+    private var encBaseNs = 0L
+    private var lastEncPts = -1L
+
+    // Vodoznak (zadání kap. 8): jen v nahrávce a fotce, ne v náhledu.
+    private var watermarkTex = 0
+    private var watermarkAspect = 1f
+    private var watermarkProgram = 0
+    private val watermarkQuad = GlUtil.floatBuffer(16)
+
     private val thread = HandlerThread("JakoGL").apply { start() }
     private val handler = Handler(thread.looper)
     private val executor = Executor { handler.post(it) }
@@ -106,6 +119,7 @@ class CameraRenderer(
 
     fun release() {
         runBlockingOnGl {
+            releaseEncoder()
             releaseWindow()
             cameraTexture?.release()
             if (eglDisplay != EGL14.EGL_NO_DISPLAY) {
@@ -148,6 +162,7 @@ class CameraRenderer(
         cameraProgram = GlUtil.program(CAMERA_VS, CAMERA_FS)
         meshProgram = GlUtil.program(MESH_VS, MESH_FS)
         mask.init()
+        watermarkProgram = GlUtil.program(WATERMARK_VS, WATERMARK_FS)
     }
 
     private fun onSurfaceRequest(request: SurfaceRequest) {
@@ -230,6 +245,8 @@ class CameraRenderer(
         if (showMesh) drawMesh(mapping)
         EGL14.eglSwapBuffers(eglDisplay, window)
 
+        if (st != null && hasFrame && encoder != EGL14.EGL_NO_SURFACE) drawToEncoder(st.timestamp)
+
         if (st != null && hasFrame) {
             // Časová značka kamery je podle zařízení v CLOCK_MONOTONIC, nebo v BOOTTIME (včetně spánku).
             val ts = st.timestamp
@@ -257,6 +274,131 @@ class CameraRenderer(
         GLES30.glDisableVertexAttribArray(loc)
     }
 
+    /** Začne kreslit každý snímek i do enkodéru; časy snímků relativně k [baseNs] (CLOCK_MONOTONIC). */
+    fun startRecording(surface: Surface, width: Int, height: Int, baseNs: Long) = handler.post {
+        releaseEncoder()
+        encoder = EGL14.eglCreateWindowSurface(eglDisplay, eglConfig, surface, intArrayOf(EGL14.EGL_NONE), 0)
+        encW = width; encH = height; encBaseNs = baseNs; lastEncPts = -1L
+    }
+
+    /** Synchronně – enkodér smí skončit až po návratu. */
+    fun stopRecording() = runBlockingOnGl { releaseEncoder() }
+
+    private fun releaseEncoder() {
+        if (encoder != EGL14.EGL_NO_SURFACE) {
+            EGL14.eglMakeCurrent(eglDisplay, pbuffer, pbuffer, eglContext)
+            EGL14.eglDestroySurface(eglDisplay, encoder)
+            encoder = EGL14.EGL_NO_SURFACE
+        }
+    }
+
+    /** Vodoznak „JakoTáta“ do nahrávek a fotek; null = vypnutý (rodičovská zóna). */
+    fun setWatermark(bitmap: Bitmap?) = handler.post {
+        makeCurrent()
+        if (watermarkTex != 0) { GLES30.glDeleteTextures(1, intArrayOf(watermarkTex), 0); watermarkTex = 0 }
+        if (bitmap == null) return@post
+        val t = IntArray(1)
+        GLES30.glGenTextures(1, t, 0)
+        GLES30.glBindTexture(GLES30.GL_TEXTURE_2D, t[0])
+        GLES30.glTexParameteri(GLES30.GL_TEXTURE_2D, GLES30.GL_TEXTURE_MIN_FILTER, GLES30.GL_LINEAR)
+        GLES30.glTexParameteri(GLES30.GL_TEXTURE_2D, GLES30.GL_TEXTURE_MAG_FILTER, GLES30.GL_LINEAR)
+        GLES30.glTexParameteri(GLES30.GL_TEXTURE_2D, GLES30.GL_TEXTURE_WRAP_S, GLES30.GL_CLAMP_TO_EDGE)
+        GLES30.glTexParameteri(GLES30.GL_TEXTURE_2D, GLES30.GL_TEXTURE_WRAP_T, GLES30.GL_CLAMP_TO_EDGE)
+        android.opengl.GLUtils.texImage2D(GLES30.GL_TEXTURE_2D, 0, bitmap, 0)
+        watermarkTex = t[0]
+        watermarkAspect = bitmap.width.toFloat() / bitmap.height
+    }
+
+    /**
+     * Fotka (zadání kap. 6.4): obraz s maskou a vodoznakem v rozlišení [width]×[height], stejný ořez
+     * a zrcadlení jako náhled. Callback na GL vlákně; null, když ještě není snímek.
+     */
+    fun capturePhoto(width: Int, height: Int, callback: (Bitmap?) -> Unit) = handler.post {
+        if (!hasFrame || bufferW == 0) { callback(null); return@post }
+        makeCurrent()
+        callback(renderOffscreen(width, height) {
+            val m = DisplayMapping.cover(bufferW, bufferH, rotation, width, height, mirror)
+            drawCamera(m)
+            if (maskEnabled) drawMask(m)
+            drawWatermark(width, height)
+        })
+    }
+
+    private fun drawToEncoder(cameraTimestampNs: Long) {
+        // Časová značka kamery je podle zařízení v CLOCK_MONOTONIC nebo BOOTTIME → převést na MONOTONIC.
+        val now = System.nanoTime()
+        val mono = if (kotlin.math.abs(now - cameraTimestampNs) < 1_000_000_000L) cameraTimestampNs
+        else cameraTimestampNs - (android.os.SystemClock.elapsedRealtimeNanos() - now)
+        val pts = mono - encBaseNs
+        if (pts < 0 || pts <= lastEncPts) return
+        lastEncPts = pts
+        EGL14.eglMakeCurrent(eglDisplay, encoder, encoder, eglContext)
+        GLES30.glViewport(0, 0, encW, encH)
+        GLES30.glClearColor(0f, 0f, 0f, 1f)
+        GLES30.glClear(GLES30.GL_COLOR_BUFFER_BIT)
+        val m = DisplayMapping.cover(bufferW, bufferH, rotation, encW, encH, mirror)
+        drawCamera(m)
+        if (maskEnabled) drawMask(m)
+        drawWatermark(encW, encH)
+        EGLExt.eglPresentationTimeANDROID(eglDisplay, encoder, pts)
+        EGL14.eglSwapBuffers(eglDisplay, encoder)
+        makeCurrent()
+    }
+
+    /** Malý vodoznak v pravém dolním rohu: šířka 24 % výstupu, okraj 3 %. */
+    private fun drawWatermark(w: Int, h: Int) {
+        if (watermarkTex == 0 || w == 0 || h == 0) return
+        val qw = 0.24f * 2f
+        val qh = qw * w / h / watermarkAspect
+        val margin = 0.03f * 2f
+        val x1 = 1f - margin; val x0 = x1 - qw
+        val y0 = -1f + margin * w / h; val y1 = y0 + qh
+        watermarkQuad.clear()
+        watermarkQuad.put(floatArrayOf(x0, y0, 0f, 1f, x1, y0, 1f, 1f, x0, y1, 0f, 0f, x1, y1, 1f, 0f))
+        watermarkQuad.position(0)
+        GLES30.glUseProgram(watermarkProgram)
+        GLES30.glActiveTexture(GLES30.GL_TEXTURE0)
+        GLES30.glBindTexture(GLES30.GL_TEXTURE_2D, watermarkTex)
+        GLES30.glUniform1i(GLES30.glGetUniformLocation(watermarkProgram, "uTex"), 0)
+        val aPos = GLES30.glGetAttribLocation(watermarkProgram, "aPos")
+        val aUv = GLES30.glGetAttribLocation(watermarkProgram, "aUv")
+        GLES30.glEnableVertexAttribArray(aPos)
+        GLES30.glEnableVertexAttribArray(aUv)
+        watermarkQuad.position(0)
+        GLES30.glVertexAttribPointer(aPos, 2, GLES30.GL_FLOAT, false, 16, watermarkQuad)
+        watermarkQuad.position(2)
+        GLES30.glVertexAttribPointer(aUv, 2, GLES30.GL_FLOAT, false, 16, watermarkQuad)
+        GLES30.glEnable(GLES30.GL_BLEND)
+        GLES30.glBlendFunc(GLES30.GL_ONE, GLES30.GL_ONE_MINUS_SRC_ALPHA)  // bitmapa má předem vynásobenou alfu
+        GLES30.glDrawArrays(GLES30.GL_TRIANGLE_STRIP, 0, 4)
+        GLES30.glDisable(GLES30.GL_BLEND)
+        GLES30.glDisableVertexAttribArray(aPos)
+        GLES30.glDisableVertexAttribArray(aUv)
+    }
+
+    /** Vykreslí [block] do framebufferu w×h a vrátí výsledek jako narovnanou bitmapu. */
+    private fun renderOffscreen(w: Int, h: Int, block: () -> Unit): Bitmap {
+        val fbo = IntArray(1); val tex = IntArray(1)
+        GLES30.glGenTextures(1, tex, 0)
+        GLES30.glBindTexture(GLES30.GL_TEXTURE_2D, tex[0])
+        GLES30.glTexImage2D(GLES30.GL_TEXTURE_2D, 0, GLES30.GL_RGBA, w, h, 0, GLES30.GL_RGBA, GLES30.GL_UNSIGNED_BYTE, null)
+        GLES30.glGenFramebuffers(1, fbo, 0)
+        GLES30.glBindFramebuffer(GLES30.GL_FRAMEBUFFER, fbo[0])
+        GLES30.glFramebufferTexture2D(GLES30.GL_FRAMEBUFFER, GLES30.GL_COLOR_ATTACHMENT0, GLES30.GL_TEXTURE_2D, tex[0], 0)
+        GLES30.glViewport(0, 0, w, h)
+        GLES30.glClearColor(0f, 0f, 0f, 1f)
+        GLES30.glClear(GLES30.GL_COLOR_BUFFER_BIT)
+        block()
+        val buf = ByteBuffer.allocateDirect(w * h * 4).order(ByteOrder.nativeOrder())
+        GLES30.glReadPixels(0, 0, w, h, GLES30.GL_RGBA, GLES30.GL_UNSIGNED_BYTE, buf)
+        GLES30.glBindFramebuffer(GLES30.GL_FRAMEBUFFER, 0)
+        GLES30.glDeleteFramebuffers(1, fbo, 0)
+        GLES30.glDeleteTextures(1, tex, 0)
+        val raw = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888).apply { buf.position(0); copyPixelsFromBuffer(buf) }
+        // glReadPixels čte odspodu nahoru.
+        return Bitmap.createBitmap(raw, 0, 0, w, h, Matrix().apply { postScale(1f, -1f) }, false)
+    }
+
     /** Nastaví (nebo zruší) obličej táty pro masku. */
     fun setProfile(profile: FaceProfile?) = handler.post { makeCurrent(); mask.setProfile(profile) }
 
@@ -270,24 +412,7 @@ class CameraRenderer(
         val swap = rotation % 180 != 0
         val w = if (swap) bufferH else bufferW
         val h = if (swap) bufferW else bufferH
-        val fbo = IntArray(1); val tex = IntArray(1)
-        GLES30.glGenTextures(1, tex, 0)
-        GLES30.glBindTexture(GLES30.GL_TEXTURE_2D, tex[0])
-        GLES30.glTexImage2D(GLES30.GL_TEXTURE_2D, 0, GLES30.GL_RGBA, w, h, 0, GLES30.GL_RGBA, GLES30.GL_UNSIGNED_BYTE, null)
-        GLES30.glGenFramebuffers(1, fbo, 0)
-        GLES30.glBindFramebuffer(GLES30.GL_FRAMEBUFFER, fbo[0])
-        GLES30.glFramebufferTexture2D(GLES30.GL_FRAMEBUFFER, GLES30.GL_COLOR_ATTACHMENT0, GLES30.GL_TEXTURE_2D, tex[0], 0)
-        GLES30.glViewport(0, 0, w, h)
-        drawCamera(DisplayMapping(1f, 1f, mirror = false))
-        val buf = ByteBuffer.allocateDirect(w * h * 4).order(ByteOrder.nativeOrder())
-        GLES30.glReadPixels(0, 0, w, h, GLES30.GL_RGBA, GLES30.GL_UNSIGNED_BYTE, buf)
-        GLES30.glBindFramebuffer(GLES30.GL_FRAMEBUFFER, 0)
-        GLES30.glDeleteFramebuffers(1, fbo, 0)
-        GLES30.glDeleteTextures(1, tex, 0)
-        val raw = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888).apply { buf.position(0); copyPixelsFromBuffer(buf) }
-        // glReadPixels čte odspodu nahoru.
-        val upright = Bitmap.createBitmap(raw, 0, 0, w, h, Matrix().apply { postScale(1f, -1f) }, false)
-        callback(upright)
+        callback(renderOffscreen(w, h) { drawCamera(DisplayMapping(1f, 1f, mirror = false)) })
     }
 
     private fun drawMask(m: DisplayMapping) {
@@ -378,6 +503,19 @@ uniform samplerExternalOES uTex;
 in vec2 vTex;
 out vec4 outColor;
 void main() { outColor = texture(uTex, vTex); }"""
+
+        const val WATERMARK_VS = """#version 300 es
+in vec2 aPos;
+in vec2 aUv;
+out vec2 vUv;
+void main() { gl_Position = vec4(aPos, 0.0, 1.0); vUv = aUv; }"""
+
+        const val WATERMARK_FS = """#version 300 es
+precision mediump float;
+uniform sampler2D uTex;
+in vec2 vUv;
+out vec4 outColor;
+void main() { outColor = texture(uTex, vUv); }"""
 
         const val MESH_VS = """#version 300 es
 in vec2 aPt;

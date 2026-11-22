@@ -22,4 +22,8 @@ internal object NativeVoice {
     external fun nativeLiveLatencyMs(): Float
     external fun nativeMeasureRoundTrip(): Int
     external fun nativeAnalyze(pcm: FloatArray, sampleRate: Int): FloatArray
+    external fun nativeSetRecording(on: Boolean)
+    external fun nativeRecordingStartNs(): Long
+    external fun nativeRecordingLatencyNs(): Long
+    external fun nativeReadRecording(dst: FloatArray): Int
 }

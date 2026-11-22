@@ -65,6 +65,14 @@
     <string name="voice_err_noisy">Too much noise around – find a quieter place.</string>
     <string name="latency_test">Latency</string>
 
+    <string name="recording_timer">Recording, %1$d of %2$d seconds</string>
+    <string name="saved_video">Video saved to gallery</string>
+    <string name="saved_photo">Photo saved to gallery</string>
+    <string name="action_play">Play</string>
+    <string name="action_share">Share</string>
+    <string name="action_trash">To trash</string>
+    <string name="gallery_empty">Nothing here yet. Record a video or take a photo!</string>
+
     <plurals name="seconds">
         <item quantity="one">%d second</item>
         <item quantity="other">%d seconds</item>
