@@ -259,7 +259,6 @@ fun MainScreen() {
             val status: @Composable () -> Unit = {
                 if (imageMode == ImageMode.PUPPET && state.profile != null) PuppetHint(state)
                 if (recording) RecordingPill(elapsed, settings.maxRecordingSec)
-                else if (hasMic && voiceOn) ParrotPill(state)
             }
             val center: @Composable () -> Unit = {
                 when {
@@ -283,7 +282,7 @@ fun MainScreen() {
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.Top) {
                     ProfileChip(state) { sheetOpen = true }
                     Spacer(Modifier.weight(1f))
-                    if (hasMic) SoundModeChip(state)
+                    if (hasMic) SoundModeChip(state, voiceOn)
                     GlassBox(shape = androidx.compose.foundation.shape.CircleShape) {
                         RoundIcon(JakoIcons.Sliders, stringResource(R.string.action_settings), enabled = !recording) {
                             galleryOpen = false; lastItem = null; settingsOpen = !settingsOpen
@@ -328,23 +327,56 @@ private fun Scrollable(content: @Composable () -> Unit) {
     Box(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()), contentAlignment = Alignment.Center) { content() }
 }
 
-/** Ikona režimu zvuku (zadání kap. 6.3): klepnutím Papoušek → (Sluchátka) → Ticho. */
+/**
+ * Režim zvuku v horní liště (zadání kap. 6.3): klepnutím Echo → (Sluchátka) → Ticho. V režimu Echo
+ * je ikona zároveň indikátor mikrofonu: sloupce podle hlasitosti, při přehrávání táty svítí všechny.
+ * Stav (poslouchám / nahrávám / táta říká) je v popisu pro čtečku obrazovky.
+ */
 @Composable
-private fun SoundModeChip(state: CameraState) {
+private fun SoundModeChip(state: CameraState, voiceOn: Boolean) {
     val mode by state.voice.mode.collectAsStateWithLifecycle()
+    val c = JakoTheme.colors
     val (label, icon) = when (mode) {
         SoundMode.PARROT -> R.string.sound_parrot to JakoIcons.Parrot
         SoundMode.HEADPHONES -> R.string.sound_headphones to JakoIcons.Headphones
         SoundMode.SILENT -> R.string.sound_silent to JakoIcons.Silent
     }
+    val echoActive = mode == SoundMode.PARROT && voiceOn
+    var parrot by remember { mutableStateOf(ParrotState.LISTENING) }
+    var level by remember { mutableFloatStateOf(0f) }
+    LaunchedEffect(echoActive) {
+        while (echoActive) { parrot = state.voice.parrotState(); level = state.voice.inputLevel(); delay(80) }
+    }
+    val stateText = stringResource(
+        when (parrot) {
+            ParrotState.LISTENING -> R.string.parrot_listening
+            ParrotState.RECORDING -> R.string.parrot_recording
+            ParrotState.PROCESSING, ParrotState.PLAYING -> R.string.parrot_playing
+        },
+    )
+    val labelText = stringResource(label)
     GlassBox(
-        Modifier.heightIn(min = JakoDimens.pill).clickable(role = Role.Button) { state.voice.cycleMode() },
+        Modifier.heightIn(min = JakoDimens.pill).clickable(role = Role.Button) { state.voice.cycleMode() }
+            .semantics { contentDescription = if (echoActive) "$labelText, $stateText" else labelText },
         shape = RoundedCornerShape(50),
     ) {
-        Row(Modifier.padding(horizontal = 16.dp, vertical = 14.dp), verticalAlignment = Alignment.CenterVertically) {
-            androidx.compose.material3.Icon(icon, null, tint = JakoTheme.colors.onGlass)
+        Row(Modifier.padding(horizontal = 14.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+            if (echoActive) {
+                val playing = parrot == ParrotState.PROCESSING || parrot == ParrotState.PLAYING
+                val bars = ((20f * kotlin.math.log10(level.coerceAtLeast(1e-5f)) + 60f) / 12f).toInt().coerceIn(0, 5)
+                Row(Modifier.height(24.dp), verticalAlignment = Alignment.CenterVertically) {
+                    repeat(5) { i ->
+                        Box(
+                            Modifier.padding(end = 2.dp).width(3.dp).height((8 + i * 3).dp).clip(RoundedCornerShape(2.dp))
+                                .background(if (playing || i < bars) c.accentStart else c.onGlass.copy(alpha = 0.3f)),
+                        )
+                    }
+                }
+            } else {
+                androidx.compose.material3.Icon(icon, null, tint = c.onGlass)
+            }
             Spacer(Modifier.width(8.dp))
-            Text(stringResource(label), style = MaterialTheme.typography.labelLarge, color = JakoTheme.colors.onGlass)
+            Text(labelText, style = MaterialTheme.typography.labelLarge, color = c.onGlass)
         }
     }
 }
@@ -363,39 +395,6 @@ private fun PuppetHint(state: CameraState) {
                 stringResource(R.string.puppet_neutral), modifier = Modifier.padding(horizontal = 18.dp, vertical = 12.dp),
                 style = MaterialTheme.typography.labelLarge, color = JakoTheme.colors.onGlass,
             )
-        }
-    }
-}
-
-/** Stav Papouška: poslouchám / nahrávám / táta říká (zadání kap. 6.3, návrh UI). */
-@Composable
-private fun ParrotPill(state: CameraState) {
-    val mode by state.voice.mode.collectAsStateWithLifecycle()
-    if (mode != SoundMode.PARROT) return
-    var parrot by remember { mutableStateOf(ParrotState.LISTENING) }
-    var level by remember { mutableFloatStateOf(0f) }
-    LaunchedEffect(Unit) {
-        while (true) { parrot = state.voice.parrotState(); level = state.voice.inputLevel(); delay(80) }
-    }
-    val text = when (parrot) {
-        ParrotState.LISTENING -> R.string.parrot_listening
-        ParrotState.RECORDING -> R.string.parrot_recording
-        ParrotState.PROCESSING, ParrotState.PLAYING -> R.string.parrot_playing
-    }
-    val c = JakoTheme.colors
-    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
-        GlassBox(shape = RoundedCornerShape(50)) {
-            Row(Modifier.padding(horizontal = 16.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
-                val bars = ((20f * kotlin.math.log10(level.coerceAtLeast(1e-5f)) + 60f) / 12f).toInt().coerceIn(0, 5)
-                repeat(5) { i ->
-                    Box(
-                        Modifier.padding(end = 3.dp).width(4.dp).height((8 + i * 3).dp).clip(RoundedCornerShape(2.dp))
-                            .background(if (i < bars || parrot == ParrotState.PLAYING) c.accentStart else c.onGlass.copy(alpha = 0.25f)),
-                    )
-                }
-                Spacer(Modifier.width(8.dp))
-                Text(stringResource(text), style = MaterialTheme.typography.labelLarge, color = c.onGlass)
-            }
         }
     }
 }

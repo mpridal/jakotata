@@ -12,7 +12,7 @@
 
     <!-- Modos de sonido -->
     <string name="sound_headphones">Auriculares</string>
-    <string name="sound_parrot">Loro</string>
+    <string name="sound_parrot">Eco</string>
     <string name="sound_silent">Silencio</string>
 
     <!-- Pantalla principal -->

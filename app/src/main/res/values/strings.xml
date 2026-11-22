@@ -14,7 +14,7 @@
 
     <!-- Sound modes (spec 3.2) -->
     <string name="sound_headphones">Headphones</string>
-    <string name="sound_parrot">Parrot</string>
+    <string name="sound_parrot">Echo</string>
     <string name="sound_silent">Silent</string>
 
     <!-- Main screen -->

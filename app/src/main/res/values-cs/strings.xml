@@ -12,7 +12,7 @@
 
     <!-- Režimy zvuku (zadání kap. 3.2) -->
     <string name="sound_headphones">Sluchátka</string>
-    <string name="sound_parrot">Papoušek</string>
+    <string name="sound_parrot">Echo</string>
     <string name="sound_silent">Ticho</string>
 
     <!-- Hlavní obrazovka -->
