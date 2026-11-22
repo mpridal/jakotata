@@ -3,6 +3,14 @@
 Formát sekce pro `tool/release/make_latest_json.py` (zadání kap. 9): `## <verze>`, volitelně
 `Minimální verze: x.y.z`, pak `### cs`, `### en`, `### es`.
 
+## 0.1.2
+### cs
+Režim Papoušek se teď jmenuje Echo. Indikátor mikrofonu je v horní liště, video má víc místa.
+### en
+Parrot mode is now called Echo. The microphone indicator moved to the top bar, leaving more room for the video.
+### es
+El modo Loro ahora se llama Eco. El indicador del micrófono está en la barra superior y el vídeo tiene más espacio.
+
 ## 0.1.1
 Minimální verze: 0.1.1
 ### cs

@@ -14,7 +14,7 @@ val keystoreProps = Properties().apply {
 val releaseAbiOnly = project.hasProperty("releaseAbiOnly")
 
 // versionCode = major·10000 + minor·100 + patch (zadání kap. 9)
-val appVersionName = "0.1.1"
+val appVersionName = "0.1.2"
 val appVersionCode = appVersionName.split(".").map(String::toInt).let { v -> v[0] * 10000 + v[1] * 100 + v[2] }
 
 android {
