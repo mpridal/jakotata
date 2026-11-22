@@ -73,6 +73,12 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.ui.platform.LocalConfiguration
 import io.github.mpridal.jakotata.core.record.MediaItem
 import io.github.mpridal.jakotata.ui.components.JakoIcons
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.runtime.produceState
+import io.github.mpridal.jakotata.core.render.ImageMode
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
@@ -111,6 +117,7 @@ fun MainScreen() {
     var voiceOn by rememberSaveable { mutableStateOf(true) }
     var amount by rememberSaveable { mutableFloatStateOf(0.8f) }
     var dadEyes by rememberSaveable { mutableStateOf(false) }
+    var imageMode by rememberSaveable { mutableStateOf(ImageMode.MASK) }
     var sheetOpen by rememberSaveable { mutableStateOf(false) }
     var voiceSheetOpen by rememberSaveable { mutableStateOf(false) }
     var galleryOpen by rememberSaveable { mutableStateOf(false) }
@@ -177,19 +184,37 @@ fun MainScreen() {
             }
         }
         CompositionLocalProvider(LocalHazeState provides hazeState) {
-            Column(
-                Modifier.fillMaxSize().safeDrawingPadding().padding(JakoDimens.gutter),
-                verticalArrangement = Arrangement.SpaceBetween,
-            ) {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.Top) {
-                        ProfileChip(state) { sheetOpen = true }
-                        if (hasMic) SoundModeChip(state)
+            val galleryThumb by produceState<android.graphics.Bitmap?>(null, lastItem, galleryOpen) {
+                value = withContext(Dispatchers.IO) { state.library.list().firstOrNull()?.let { state.library.thumbnail(it, 160) } }
+            }
+            val controls = CameraControls(
+                mode = imageMode, onMode = { imageMode = it },
+                faceOn = maskOn, onFace = { maskOn = it },
+                voiceOn = voiceOn, onVoice = { voiceOn = it },
+                amount = amount, onAmount = { amount = it },
+                recording = recording || countdown > 0,
+                onRecord = {
+                    when {
+                        recording -> stopRecording()
+                        countdown > 0 -> countdown = 0
+                        else -> { lastItem = null; galleryOpen = false; countdown = 3 }
                     }
-                    if (recording) RecordingPill(elapsed, MAX_RECORDING_SEC)
-                    else if (hasMic && voiceOn) ParrotPill(state)
-                    if (BuildConfig.DEBUG) DebugOverlay(state, showMesh) { showMesh = !showMesh }
-                }
+                },
+                onPhoto = {
+                    scope.launch {
+                        val uri = state.takePhoto(portrait)
+                        if (uri != null) lastItem = MediaItem(uri, isVideo = false, dateAddedSec = System.currentTimeMillis() / 1000, durationMs = 0)
+                    }
+                },
+                onGallery = { lastItem = null; galleryOpen = !galleryOpen },
+                galleryThumb = galleryThumb,
+                onSwitchCamera = { front = !front },
+            )
+            val status: @Composable () -> Unit = {
+                if (recording) RecordingPill(elapsed, MAX_RECORDING_SEC)
+                else if (hasMic && voiceOn) ParrotPill(state)
+            }
+            val center: @Composable () -> Unit = {
                 when {
                     !hasCamera || !hasMic -> PermissionCard { launcher.launch(permissions) }
                     countdown > 0 -> CountdownOverlay(countdown)
@@ -200,30 +225,40 @@ fun MainScreen() {
                         state, canClose = state.profile != null,
                         onRecordVoice = { sheetOpen = false; voiceSheetOpen = true },
                     ) { sheetOpen = false }
-                    else -> Spacer(Modifier)
+                    else -> Unit
                 }
-                ControlPanel(
-                    maskOn = maskOn, onMaskOn = { maskOn = it },
-                    voiceOn = voiceOn, onVoiceOn = { voiceOn = it },
-                    amount = amount, onAmount = { amount = it },
-                    dadEyes = dadEyes, onDadEyes = { dadEyes = it },
-                    onSwitchCamera = { front = !front },
-                    recording = recording || countdown > 0,
-                    onRecord = {
-                        when {
-                            recording -> stopRecording()
-                            countdown > 0 -> countdown = 0
-                            else -> { lastItem = null; galleryOpen = false; countdown = 3 }
+            }
+            val topBar: @Composable () -> Unit = {
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.Top) {
+                    ProfileChip(state) { sheetOpen = true }
+                    Spacer(Modifier.weight(1f))
+                    if (hasMic) SoundModeChip(state)
+                }
+            }
+            BoxWithConstraints(Modifier.fillMaxSize().safeDrawingPadding().padding(JakoDimens.gutter)) {
+                if (maxWidth > maxHeight) {
+                    // Na šířku (tablet): panel vlevo, tlačítka vpravo (návrh UI: Viktoriin tablet).
+                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        topBar()
+                        Row(Modifier.fillMaxSize(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                            SidePanel(controls, Modifier.align(Alignment.Bottom))
+                            Column(Modifier.weight(1f).fillMaxHeight(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                                status()
+                                if (BuildConfig.DEBUG) DebugOverlay(state, showMesh) { showMesh = !showMesh }
+                                Box(Modifier.fillMaxWidth().weight(1f).verticalScroll(rememberScrollState()), contentAlignment = Alignment.Center) { center() }
+                            }
+                            ActionRail(controls, Modifier.align(Alignment.CenterVertically))
                         }
-                    },
-                    onPhoto = {
-                        scope.launch {
-                            val uri = state.takePhoto(portrait)
-                            if (uri != null) lastItem = MediaItem(uri, isVideo = false, dateAddedSec = System.currentTimeMillis() / 1000, durationMs = 0)
-                        }
-                    },
-                    onGallery = { lastItem = null; galleryOpen = !galleryOpen },
-                )
+                    }
+                } else {
+                    Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        topBar()
+                        status()
+                        if (BuildConfig.DEBUG) DebugOverlay(state, showMesh) { showMesh = !showMesh }
+                        Box(Modifier.fillMaxWidth().weight(1f).verticalScroll(rememberScrollState()), contentAlignment = Alignment.Center) { center() }
+                        PhonePanel(controls)
+                    }
+                }
             }
         }
     }
@@ -233,21 +268,20 @@ fun MainScreen() {
 @Composable
 private fun SoundModeChip(state: CameraState) {
     val mode by state.voice.mode.collectAsStateWithLifecycle()
-    val label = when (mode) {
-        SoundMode.PARROT -> R.string.sound_parrot
-        SoundMode.HEADPHONES -> R.string.sound_headphones
-        SoundMode.SILENT -> R.string.sound_silent
+    val (label, icon) = when (mode) {
+        SoundMode.PARROT -> R.string.sound_parrot to JakoIcons.Parrot
+        SoundMode.HEADPHONES -> R.string.sound_headphones to JakoIcons.Headphones
+        SoundMode.SILENT -> R.string.sound_silent to JakoIcons.Silent
     }
     GlassBox(
         Modifier.heightIn(min = JakoDimens.pill).clickable(role = Role.Button) { state.voice.cycleMode() },
         shape = RoundedCornerShape(50),
     ) {
-        Text(
-            stringResource(label),
-            modifier = Modifier.padding(horizontal = 18.dp, vertical = 14.dp),
-            style = MaterialTheme.typography.labelLarge,
-            color = JakoTheme.colors.onGlass,
-        )
+        Row(Modifier.padding(horizontal = 16.dp, vertical = 14.dp), verticalAlignment = Alignment.CenterVertically) {
+            androidx.compose.material3.Icon(icon, null, tint = JakoTheme.colors.onGlass)
+            Spacer(Modifier.width(8.dp))
+            Text(stringResource(label), style = MaterialTheme.typography.labelLarge, color = JakoTheme.colors.onGlass)
+        }
     }
 }
 
@@ -302,7 +336,9 @@ private fun ProfileChip(state: CameraState, onClick: () -> Unit) {
                 Box(Modifier.size(40.dp).background(c.accent, CircleShape))
             }
             Spacer(Modifier.width(10.dp))
-            Text(stringResource(R.string.profile_default_name), style = MaterialTheme.typography.labelLarge, color = c.onGlass)
+            Text(state.profile?.name?.takeIf { it.isNotBlank() } ?: stringResource(R.string.profile_default_name), style = MaterialTheme.typography.labelLarge, color = c.onGlass)
+            Spacer(Modifier.width(6.dp))
+            androidx.compose.material3.Icon(JakoIcons.Chevron, null, tint = c.onGlass, modifier = Modifier.size(18.dp))
         }
     }
 }
@@ -382,88 +418,6 @@ internal fun PillButton(text: String, primary: Boolean, enabled: Boolean, onClic
         contentAlignment = Alignment.Center,
     ) {
         Text(text, style = MaterialTheme.typography.labelLarge, color = if (primary) Color.White else c.onGlass, textAlign = TextAlign.Center)
-    }
-}
-
-@Composable
-private fun ControlPanel(
-    maskOn: Boolean, onMaskOn: (Boolean) -> Unit,
-    voiceOn: Boolean, onVoiceOn: (Boolean) -> Unit,
-    amount: Float, onAmount: (Float) -> Unit,
-    dadEyes: Boolean, onDadEyes: (Boolean) -> Unit,
-    onSwitchCamera: () -> Unit,
-    recording: Boolean,
-    onRecord: () -> Unit,
-    onPhoto: () -> Unit,
-    onGallery: () -> Unit,
-) {
-    val c = JakoTheme.colors
-    val recordLabel = stringResource(R.string.action_record)
-    val switchLabel = stringResource(R.string.action_switch_camera)
-    GlassBox(Modifier.fillMaxWidth(), shape = RoundedCornerShape(JakoDimens.panelRadius)) {
-        Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                ToggleChip(stringResource(R.string.toggle_face), maskOn, onMaskOn)
-                ToggleChip(stringResource(R.string.toggle_voice), voiceOn, onVoiceOn)
-                ToggleChip(stringResource(R.string.dad_eyes), dadEyes, onDadEyes)
-                Spacer(Modifier.weight(1f))
-                Text("${(amount * 100).toInt()} %", style = MaterialTheme.typography.titleMedium, color = c.onGlass)
-            }
-            val sliderLabel = stringResource(R.string.how_much_dad)
-            Slider(
-                value = amount, onValueChange = onAmount, steps = 19,
-                modifier = Modifier.semantics { contentDescription = sliderLabel },
-                colors = SliderDefaults.colors(thumbColor = c.accentStart, activeTrackColor = c.accentStart),
-            )
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    IconCircle(JakoIcons.Gallery, stringResource(R.string.action_gallery), enabled = !recording, onClick = onGallery)
-                    IconCircle(JakoIcons.Camera, stringResource(R.string.action_photo), enabled = true, onClick = onPhoto)
-                }
-                // Tlačítko nahrávání: kruh → zaoblený čtverec při nahrávání (zadání kap. 7).
-                val stopLabel = stringResource(R.string.action_stop)
-                val inner by androidx.compose.animation.core.animateDpAsState(if (recording) 34.dp else JakoDimens.recordButton - 20.dp, label = "rec")
-                val corner by androidx.compose.animation.core.animateIntAsState(if (recording) 28 else 50, label = "corner")
-                Box(
-                    Modifier.size(JakoDimens.recordButton).clip(CircleShape).background(c.onGlass.copy(alpha = 0.15f))
-                        .clickable(role = Role.Button, onClick = onRecord)
-                        .semantics { contentDescription = if (recording) stopLabel else recordLabel },
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Box(Modifier.size(inner).background(if (recording) c.recording else c.accentStart, RoundedCornerShape(corner)))
-                }
-                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Spacer(Modifier.size(JakoDimens.pill))
-                    IconCircle(JakoIcons.SwitchCamera, switchLabel, enabled = !recording, onClick = onSwitchCamera)
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun IconCircle(icon: androidx.compose.ui.graphics.vector.ImageVector, label: String, enabled: Boolean, onClick: () -> Unit) {
-    val c = JakoTheme.colors
-    Box(
-        Modifier.size(JakoDimens.pill).clip(CircleShape).background(c.onGlass.copy(alpha = if (enabled) 0.12f else 0.05f))
-            .clickable(enabled = enabled, role = Role.Button, onClick = onClick),
-        contentAlignment = Alignment.Center,
-    ) {
-        androidx.compose.material3.Icon(icon, contentDescription = label, tint = c.onGlass.copy(alpha = if (enabled) 1f else 0.4f))
-    }
-}
-
-@Composable
-private fun ToggleChip(text: String, checked: Boolean, onChange: (Boolean) -> Unit) {
-    val c = JakoTheme.colors
-    Box(
-        Modifier.heightIn(min = 40.dp).clip(RoundedCornerShape(50))
-            .background(if (checked) c.onGlass else Color.Transparent)
-            .toggleable(value = checked, role = Role.Switch, onValueChange = onChange)
-            .padding(horizontal = 14.dp, vertical = 10.dp),
-        contentAlignment = Alignment.Center,
-    ) {
-        Text(text, style = MaterialTheme.typography.labelMedium, color = if (checked) c.root else c.onGlassMuted)
     }
 }
 

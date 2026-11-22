@@ -71,6 +71,8 @@
     <string name="action_trash">A la papelera</string>
     <string name="gallery_empty">Aquí aún no hay nada. ¡Graba un vídeo o hazte una foto!</string>
 
+    <string name="image_mode">Modo de imagen</string>
+
     <plurals name="seconds">
         <item quantity="one">%d segundo</item>
         <item quantity="many">%d segundos</item>

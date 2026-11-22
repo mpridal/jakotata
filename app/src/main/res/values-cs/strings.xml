@@ -71,6 +71,8 @@
     <string name="action_trash">Do koše</string>
     <string name="gallery_empty">Zatím tu nic není. Natoč video nebo se vyfoť!</string>
 
+    <string name="image_mode">Režim obrazu</string>
+
     <plurals name="seconds">
         <item quantity="one">%d sekunda</item>
         <item quantity="few">%d sekundy</item>

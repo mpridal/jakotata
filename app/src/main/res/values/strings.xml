@@ -73,6 +73,8 @@
     <string name="action_trash">To trash</string>
     <string name="gallery_empty">Nothing here yet. Record a video or take a photo!</string>
 
+    <string name="image_mode">Image mode</string>
+
     <plurals name="seconds">
         <item quantity="one">%d second</item>
         <item quantity="other">%d seconds</item>
