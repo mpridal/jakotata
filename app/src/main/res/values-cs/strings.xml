@@ -109,6 +109,14 @@
     <string name="training_exported">Exportováno.</string>
     <string name="training_export_failed">Export se nepovedl.</string>
 
+    <string name="update_available">Nová verze %1$s</string>
+    <string name="update_mandatory">Tahle aktualizace je nutná pro další používání.</string>
+    <string name="update_install">Aktualizovat</string>
+    <string name="update_later">Později</string>
+    <string name="update_failed">Stažení se nepovedlo nebo je soubor poškozený. Zkus to později.</string>
+    <string name="update_up_to_date">Máš nejnovější verzi.</string>
+    <string name="update_check_failed">Aktualizaci se nepodařilo zkontrolovat (bez internetu?).</string>
+
     <plurals name="seconds">
         <item quantity="one">%d sekunda</item>
         <item quantity="few">%d sekundy</item>

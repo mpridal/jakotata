@@ -80,6 +80,9 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.runtime.produceState
 import io.github.mpridal.jakotata.core.render.ImageMode
 import io.github.mpridal.jakotata.core.settings.AppSettings
+import io.github.mpridal.jakotata.core.update.AppVersion
+import io.github.mpridal.jakotata.core.update.UpdateCheck
+import io.github.mpridal.jakotata.core.update.UpdateService
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
@@ -135,6 +138,19 @@ fun MainScreen() {
     var voiceSheetOpen by rememberSaveable { mutableStateOf(false) }
     var galleryOpen by rememberSaveable { mutableStateOf(false) }
     var updateRequested by remember { mutableStateOf(false) }
+    val updater = remember { UpdateService(context, AppVersion.parse(BuildConfig.VERSION_NAME) ?: AppVersion(0, 0, 0)) }
+    var updateResult by remember { mutableStateOf<UpdateCheck?>(null) }
+    // Kontrola na pozadí (max. 1× za 6 h, chyby tiše); ručně z nastavení vždy s výsledkem.
+    LaunchedEffect(Unit) {
+        val r = updater.check(force = false, autoEnabled = settings.autoUpdate)
+        if (r is UpdateCheck.Available) updateResult = r
+    }
+    LaunchedEffect(updateRequested) {
+        if (updateRequested) {
+            updateResult = updater.check(force = true, autoEnabled = true)
+            updateRequested = false
+        }
+    }
     var countdown by remember { mutableIntStateOf(0) }
     var recording by remember { mutableStateOf(false) }
     var elapsed by remember { mutableIntStateOf(0) }
@@ -233,7 +249,8 @@ fun MainScreen() {
                 when {
                     !hasCamera || !hasMic -> PermissionCard { launcher.launch(permissions) }
                     countdown > 0 -> CountdownOverlay(countdown)
-                    settingsOpen -> SettingsScreen(state, settings, onCheckUpdate = { updateRequested = true }) { settingsOpen = false }
+                    updateResult != null && !recording -> UpdateCard(updateResult!!, updater) { updateResult = null }
+                    settingsOpen -> SettingsScreen(state, settings, onCheckUpdate = { settingsOpen = false; updateRequested = true }) { settingsOpen = false }
                     galleryOpen -> GalleryScreen(state.library, settings.sharingAllowed) { galleryOpen = false }
                     lastItem != null && !recording -> ResultCard(lastItem!!, state.library, settings.sharingAllowed) { lastItem = null }
                     voiceSheetOpen -> VoiceSheet(state) { voiceSheetOpen = false }

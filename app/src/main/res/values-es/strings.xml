@@ -109,6 +109,14 @@
     <string name="training_exported">Exportado.</string>
     <string name="training_export_failed">La exportación falló.</string>
 
+    <string name="update_available">Nueva versión %1$s</string>
+    <string name="update_mandatory">Esta actualización es necesaria para seguir usando la app.</string>
+    <string name="update_install">Actualizar</string>
+    <string name="update_later">Más tarde</string>
+    <string name="update_failed">La descarga falló o el archivo está dañado. Inténtalo más tarde.</string>
+    <string name="update_up_to_date">Tienes la última versión.</string>
+    <string name="update_check_failed">No se pudo comprobar (¿sin internet?).</string>
+
     <plurals name="seconds">
         <item quantity="one">%d segundo</item>
         <item quantity="many">%d segundos</item>

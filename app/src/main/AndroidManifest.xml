@@ -7,6 +7,8 @@
     <!-- Jen pro volitelnou kontrolu aktualizací (zadání kap. 8). -->
     <uses-permission android:name="android.permission.INTERNET" />
     <!-- Ukládání do galerie a čtení vlastních nahrávek jen na Androidu 8–9; od 10 přes MediaStore bez oprávnění. -->
+    <!-- Instalace stažené aktualizace z GitHub Releases (zadání kap. 9). -->
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="28" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="28" />
 
@@ -37,6 +39,17 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!-- Stažené APK aktualizace pro systémový instalátor. -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.updates"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/update_paths" />
+        </provider>
 
         <!-- Volba jazyka aplikace v systému a její uložení i na Androidu < 13. -->
         <service

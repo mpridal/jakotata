@@ -1,0 +1,79 @@
+name: Release
+
+# Zadání kap. 9 (podle Deskovek): tag v* → testy → podepsané APK (arm64) → SHA-256 → latest.json → Release.
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Žádný token v .git/config pro kód buildu a testů.
+          persist-credentials: false
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Version from the tag must match app/build.gradle.kts
+        id: version
+        run: |
+          TAG="${GITHUB_REF_NAME#v}"
+          APP=$(grep -oP 'val appVersionName = "\K[0-9.]+' app/build.gradle.kts)
+          if [ "$APP" != "$TAG" ]; then
+            echo "Tag v$TAG does not match appVersionName $APP" >&2
+            exit 1
+          fi
+          echo "name=$TAG" >> "$GITHUB_OUTPUT"
+
+      - name: Unit tests and lint
+        run: ./gradlew --console=plain :app:testDebugUnitTest :app:lintDebug
+
+      - name: Native host tests
+        run: |
+          cmake -S native/voice -B build-host -DJAKOTATA_HOST_TESTS=ON -DCMAKE_BUILD_TYPE=Release
+          cmake --build build-host -j
+          ctest --test-dir build-host --output-on-failure
+
+      - name: Signing key from GitHub Secrets
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          if [ -z "$KEYSTORE_BASE64" ]; then
+            echo "Missing KEYSTORE_BASE64 secret – refusing to publish an unsigned release" >&2
+            exit 1
+          fi
+          echo "$KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/upload.jks"
+          {
+            echo "storeFile=$RUNNER_TEMP/upload.jks"
+            echo "storePassword=$KEYSTORE_PASSWORD"
+            echo "keyAlias=$KEY_ALIAS"
+            echo "keyPassword=$KEY_PASSWORD"
+          } > keystore.properties
+
+      - name: Build the signed APK (arm64)
+        run: |
+          ./gradlew --console=plain :app:assembleRelease -PreleaseAbiOnly
+          cp app/build/outputs/apk/release/app-release.apk jakotata-${{ steps.version.outputs.name }}.apk
+
+      - name: latest.json from CHANGELOG.md
+        run: python3 tool/release/make_latest_json.py ${{ steps.version.outputs.name }} jakotata-${{ steps.version.outputs.name }}.apk latest.json
+
+      - name: Publish the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python3 -c "import json; print(json.load(open('latest.json'))['notes_cs'])" > notes.md
+          gh release create "$GITHUB_REF_NAME" jakotata-${{ steps.version.outputs.name }}.apk latest.json \
+            --title "JakoTáta ${{ steps.version.outputs.name }}" --notes-file notes.md

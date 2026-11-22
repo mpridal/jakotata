@@ -1,7 +1,17 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
 }
+
+// Podpis release: keystore.properties vytvoří release.yml z GitHub Secrets (zadání kap. 9); lokálně chybí.
+val keystoreProps = Properties().apply {
+    val f = rootProject.file("keystore.properties")
+    if (f.exists()) f.inputStream().use { load(it) }
+}
+// Release APK jen arm64-v8a (zadání kap. 5): ./gradlew assembleRelease -PreleaseAbiOnly
+val releaseAbiOnly = project.hasProperty("releaseAbiOnly")
 
 // versionCode = major·10000 + minor·100 + patch (zadání kap. 9)
 val appVersionName = "0.1.0"
@@ -19,8 +29,8 @@ android {
         versionName = appVersionName
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         ndk {
-            // Release jen arm64-v8a (zadání kap. 5); x86_64 navíc pro emulátor.
-            abiFilters += listOf("arm64-v8a", "x86_64")
+            // Release jen arm64-v8a (zadání kap. 5); x86_64 navíc pro emulátor v debug buildech.
+            abiFilters += if (releaseAbiOnly) listOf("arm64-v8a") else listOf("arm64-v8a", "x86_64")
         }
         externalNativeBuild {
             cmake {
@@ -38,8 +48,20 @@ android {
         }
     }
 
+    signingConfigs {
+        if (keystoreProps.getProperty("storeFile") != null) {
+            create("release") {
+                storeFile = file(keystoreProps.getProperty("storeFile"))
+                storePassword = keystoreProps.getProperty("storePassword")
+                keyAlias = keystoreProps.getProperty("keyAlias")
+                keyPassword = keystoreProps.getProperty("keyPassword")
+            }
+        }
+    }
+
     buildTypes {
         release {
+            signingConfigs.findByName("release")?.let { signingConfig = it }
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
@@ -97,6 +119,7 @@ dependencies {
     debugImplementation(libs.compose.ui.tooling)
 
     testImplementation(libs.junit)
+    testImplementation(libs.orgjson)  // skutečné org.json pro JVM testy (android.jar má jen stuby)
     testImplementation(libs.kotlinx.coroutines.test)
     androidTestImplementation(platform(libs.compose.bom))
     androidTestImplementation(libs.androidx.test.junit)
