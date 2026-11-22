@@ -15,7 +15,7 @@ import kotlin.math.sqrt
  * Nahrávání hlasu táty pro profil (zadání kap. 3.4): 48 kHz mono, max. 60 s, měřič úrovně.
  * Běží na vlastním vlákně; během nahrávání musí být [VoiceEngine] zastavený.
  */
-class VoiceProfileRecorder {
+class VoiceProfileRecorder(val maxSeconds: Int = MAX_SECONDS) {
     @Volatile var level: Float = 0f
         private set
     @Volatile var peak: Float = 0f
@@ -37,7 +37,7 @@ class VoiceProfileRecorder {
         val rec = AudioRecord(MediaRecorder.AudioSource.VOICE_RECOGNITION,
             SAMPLE_RATE, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_FLOAT, minBuf * 4)
         if (rec.state != AudioRecord.STATE_INITIALIZED) { rec.release(); return false }
-        samples = FloatArray(SAMPLE_RATE * MAX_SECONDS)
+        samples = FloatArray(SAMPLE_RATE * maxSeconds)
         length = 0
         peak = 0f
         recording = true

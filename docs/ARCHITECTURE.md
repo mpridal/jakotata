@@ -129,3 +129,14 @@ na nový telefon (zadání kap. 8). `INTERNET` jen pro kontrolu aktualizací.
   30 snímků po přepnutí režimu) × šířka obličeje táty se přičte k bodům táty. Fotka táty přes celou obrazovku
   (center crop), deformovaná síť s měkkým okrajem, tmavá dutina úst pod otvorem rtů, oči z fotky.
 - **Zatím chybí:** 2,5D natočení Loutky podle matice hlavy a boční fotky v profilu (UV atlas kanonického modelu).
+
+## Nastavení a rodičovská zóna (milník 8)
+
+- **Nastavení** (`core/settings/AppSettings`, DataStore): jazyk (AppCompatDelegate, „podle systému“),
+  vzhled, kvalita videa 720p/1080p, max. délka nahrávky, výchozí kamera a režim zvuku, počet obličejů 1–2,
+  automatická kontrola aktualizací.
+- **Rodičovská zóna:** vstup příkladem z násobilky (jednociferné × 11–18), vodoznak a sdílení zap/vyp,
+  profily (max. 5, složka na profil, aktivní v nastavení, nový profil = prázdná složka → vyfocení),
+  profil do koše (`files/trash/`), tréninkové nahrávky po kapitolách (max. 5 min, cíl 30 min)
+  a export ZIP s WAV přes systémový výběr souboru.
+- **Dva obličeje:** MediaPipe `numFaces` podle nastavení (změna přestaví stav kamery), maska na každém obličeji.

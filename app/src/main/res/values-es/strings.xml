@@ -75,6 +75,40 @@
 
     <string name="puppet_neutral">Pon cara seria</string>
 
+    <string name="parent_zone">Zona de padres</string>
+    <string name="settings_language">Idioma</string>
+    <string name="option_system">Del sistema</string>
+    <string name="settings_theme">Tema</string>
+    <string name="theme_light">Claro</string>
+    <string name="theme_dark">Oscuro</string>
+    <string name="settings_quality">Calidad de vídeo</string>
+    <string name="settings_max_length">Duración máx. de la grabación</string>
+    <string name="settings_camera">Cámara predeterminada</string>
+    <string name="camera_front">Frontal</string>
+    <string name="camera_back">Trasera</string>
+    <string name="settings_sound">Modo de sonido predeterminado</string>
+    <string name="settings_faces">Número de caras</string>
+    <string name="settings_auto_update">Buscar actualizaciones automáticamente</string>
+    <string name="update_check_now">Comprobar ahora</string>
+    <string name="settings_version">Versión %1$s</string>
+    <string name="about_licenses">JakoTáta funciona sin internet; las fotos, la voz y las grabaciones nunca salen del dispositivo. Bibliotecas: MediaPipe, CameraX, Oboe (Apache 2.0), Signalsmith Stretch (MIT), fuentes Nunito y Baloo 2 (OFL).</string>
+    <string name="parent_gate">Para padres: ¿cuánto es %1$d × %2$d?</string>
+    <string name="parent_watermark">Marca de agua en las grabaciones</string>
+    <string name="parent_sharing">Permitir compartir</string>
+    <string name="parent_profiles">Perfiles</string>
+    <string name="parent_new_profile_name">Nombre del nuevo perfil (p. ej. Mamá)</string>
+    <string name="parent_add_profile">Añadir perfil</string>
+    <string name="parent_trash_profile">Mover este perfil a la papelera</string>
+    <string name="parent_trash_confirm">El perfil (cara, voz, grabaciones de entrenamiento) se moverá a la papelera de la app y se podrá restaurar.</string>
+    <string name="action_cancel">Cancelar</string>
+    <string name="training_title">Grabaciones de entrenamiento (fase 2)</string>
+    <string name="training_progress">Grabado: %1$.1f de 30 min</string>
+    <string name="training_hint">Lee en voz alta lo que quieras (un libro, un cuento) en una habitación tranquila. Capítulos de hasta 5 minutos.</string>
+    <string name="training_record">Grabar un capítulo</string>
+    <string name="training_export">Exportar ZIP con archivos WAV</string>
+    <string name="training_exported">Exportado.</string>
+    <string name="training_export_failed">La exportación falló.</string>
+
     <plurals name="seconds">
         <item quantity="one">%d segundo</item>
         <item quantity="many">%d segundos</item>

@@ -23,6 +23,7 @@ import io.github.mpridal.jakotata.core.record.MediaLibrary
 import io.github.mpridal.jakotata.core.record.MediaSaver
 import io.github.mpridal.jakotata.core.record.RecordingSession
 import io.github.mpridal.jakotata.core.render.MaskTopology
+import io.github.mpridal.jakotata.core.settings.AppSettings
 import io.github.mpridal.jakotata.core.voice.VoiceEngine
 import io.github.mpridal.jakotata.core.voice.VoiceProfile
 import kotlinx.coroutines.Dispatchers
@@ -35,8 +36,8 @@ import kotlin.math.max
  * Drží `core` objekty kamery, obličeje, renderu a profilu pro obrazovku kamery. UI volá jen tyto
  * metody, ne MediaPipe ani GL přímo (zadání kap. 4.2).
  */
-class CameraState(private val context: Context) {
-    val tracker = FaceTracker(context)
+class CameraState(private val context: Context, maxFaces: Int = 1) {
+    val tracker = FaceTracker(context, maxFaces)
     val renderer = CameraRenderer(
         faceSource = { tracker.latest.get() },
         meshEdges = tracker.meshEdges,
@@ -45,17 +46,56 @@ class CameraState(private val context: Context) {
     )
     val camera = CameraSource(context)
     val voice = VoiceEngine(context)
-    private val store = ProfileStore(context)
+    val settings = AppSettings(context)
+    private var store = ProfileStore(context)
+    private val watermark = watermarkBitmap(context)
+    /** Výška videa a fotky (720/1080) z nastavení. */
+    @Volatile var videoQuality = 720
+
+    /** Id profilů (max. 5) a aktivní profil. */
+    var profileIds: List<String> by mutableStateOf(emptyList())
+        private set
+    val activeProfileId: String get() = store.id
+    /** Jméno pro příští vyfocený profil (nový profil z rodičovské zóny); prázdné = „Táta“. */
+    var pendingName: String by mutableStateOf("")
     val library = MediaLibrary(context)
     private val saver = MediaSaver(context)
     private var session: RecordingSession? = null
 
     init {
-        renderer.setWatermark(watermarkBitmap(context))
+        renderer.setWatermark(watermark)
     }
 
-    /** Rozměry videa/fotky podle orientace obrazovky: 720p (zadání kap. 5). */
-    fun outputSize(portrait: Boolean): Pair<Int, Int> = if (portrait) 720 to 1280 else 1280 to 720
+    /** Vodoznak vypnout jde jen v rodičovské zóně (zadání kap. 8). */
+    fun setWatermarkEnabled(on: Boolean) = renderer.setWatermark(if (on) watermark else null)
+
+    /** Rozměry videa/fotky podle orientace obrazovky: 720p, volitelně 1080p (zadání kap. 5). */
+    fun outputSize(portrait: Boolean): Pair<Int, Int> {
+        val short = if (videoQuality >= 1080) 1080 else 720
+        val long = short * 16 / 9
+        return if (portrait) short to long else long to short
+    }
+
+    /** Přepne na profil [id] (nový profil = prázdná složka, vyplní se vyfocením). */
+    suspend fun selectProfile(id: String) {
+        store = ProfileStore(context, id)
+        settings.update { it.copy(activeProfile = id) }
+        loadProfile()
+    }
+
+    /** Aktuální profil do koše; aktivní se stane jiný existující (nebo prázdný výchozí). */
+    suspend fun trashActiveProfile() {
+        withContext(Dispatchers.IO) { store.moveProfileToTrash() }
+        val next = withContext(Dispatchers.IO) { ProfileStore.ids(context) }.firstOrNull() ?: ProfileStore.newId()
+        selectProfile(next)
+    }
+
+    // Tréninkové nahrávky (fáze 2).
+    suspend fun trainingSeconds(): Float = withContext(Dispatchers.IO) { store.trainingSeconds() }
+    suspend fun saveTraining(pcm: FloatArray) = withContext(Dispatchers.IO) { store.saveTraining(pcm) }
+    suspend fun exportTraining(uri: Uri): Boolean = withContext(Dispatchers.IO) {
+        runCatching { context.contentResolver.openOutputStream(uri)?.use { store.exportTrainingZip(it) } != null }.getOrDefault(false)
+    }
 
     /** Začne nahrávat video (obraz s maskou + převedený hlas). */
     suspend fun startRecording(portrait: Boolean): Boolean = withContext(Dispatchers.Default) {
@@ -86,6 +126,7 @@ class CameraState(private val context: Context) {
 
     suspend fun loadProfile() {
         val (p, v) = withContext(Dispatchers.IO) { store.load() to store.loadVoice() }
+        profileIds = withContext(Dispatchers.IO) { ProfileStore.ids(context) }
         profile = p
         renderer.setProfile(p)
         voiceProfile = v
@@ -111,6 +152,7 @@ class CameraState(private val context: Context) {
 
     suspend fun saveProfile(p: FaceProfile) {
         withContext(Dispatchers.IO) { store.save(p) }
+        profileIds = withContext(Dispatchers.IO) { ProfileStore.ids(context) }
         profile = p
         renderer.setProfile(p)
     }
@@ -141,6 +183,8 @@ class CameraState(private val context: Context) {
     } catch (e: Exception) {
         null
     }
+
+    internal fun initialProfile(id: String) { store = ProfileStore(context, id) }
 
     fun release() {
         session?.stop()
@@ -176,9 +220,9 @@ class CameraState(private val context: Context) {
 }
 
 @Composable
-fun rememberCameraState(): CameraState {
+fun rememberCameraState(maxFaces: Int = 1, activeProfile: String = ProfileStore.DEFAULT_ID): CameraState {
     val context = LocalContext.current
-    val state = remember { CameraState(context) }
+    val state = remember(maxFaces) { CameraState(context, maxFaces).also { it.initialProfile(activeProfile) } }
     DisposableEffect(state) { onDispose { state.release() } }
     return state
 }

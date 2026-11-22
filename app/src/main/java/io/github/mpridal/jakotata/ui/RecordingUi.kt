@@ -127,7 +127,7 @@ fun rememberTrash(library: MediaLibrary, onDone: () -> Unit): (MediaItem) -> Uni
 
 /** Karta po nahrání: přehrát, sdílet, do koše (video je už uložené). */
 @Composable
-fun ResultCard(item: MediaItem, library: MediaLibrary, onClose: () -> Unit) {
+fun ResultCard(item: MediaItem, library: MediaLibrary, sharingAllowed: Boolean, onClose: () -> Unit) {
     val context = LocalContext.current
     val c = JakoTheme.colors
     val trash = rememberTrash(library) { onClose() }
@@ -139,7 +139,7 @@ fun ResultCard(item: MediaItem, library: MediaLibrary, onClose: () -> Unit) {
             )
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
                 RoundAction(JakoIcons.Play, stringResource(R.string.action_play)) { openMedia(context, item.uri, item.isVideo) }
-                RoundAction(JakoIcons.Share, stringResource(R.string.action_share)) { shareMedia(context, item.uri, item.isVideo) }
+                if (sharingAllowed) RoundAction(JakoIcons.Share, stringResource(R.string.action_share)) { shareMedia(context, item.uri, item.isVideo) }
                 RoundAction(JakoIcons.Trash, stringResource(R.string.action_trash)) { trash(item) }
                 RoundAction(JakoIcons.Close, stringResource(R.string.action_close), onClose)
             }
@@ -163,7 +163,7 @@ fun RoundAction(icon: androidx.compose.ui.graphics.vector.ImageVector, label: St
 /** Galerie vlastních nahrávek a fotek (zadání kap. 6.5): klepnutí přehraje, podržení nabídne akce. */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun GalleryScreen(library: MediaLibrary, onClose: () -> Unit) {
+fun GalleryScreen(library: MediaLibrary, sharingAllowed: Boolean, onClose: () -> Unit) {
     val context = LocalContext.current
     val c = JakoTheme.colors
     var refresh by remember { mutableIntStateOf(0) }
@@ -183,7 +183,7 @@ fun GalleryScreen(library: MediaLibrary, onClose: () -> Unit) {
             if (sel != null) {
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
                     RoundAction(JakoIcons.Play, stringResource(R.string.action_play)) { openMedia(context, sel.uri, sel.isVideo) }
-                    RoundAction(JakoIcons.Share, stringResource(R.string.action_share)) { shareMedia(context, sel.uri, sel.isVideo) }
+                    if (sharingAllowed) RoundAction(JakoIcons.Share, stringResource(R.string.action_share)) { shareMedia(context, sel.uri, sel.isVideo) }
                     RoundAction(JakoIcons.Trash, stringResource(R.string.action_trash)) { trash(sel) }
                 }
             }

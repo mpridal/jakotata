@@ -79,6 +79,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.runtime.produceState
 import io.github.mpridal.jakotata.core.render.ImageMode
+import io.github.mpridal.jakotata.core.settings.AppSettings
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
@@ -98,6 +99,12 @@ import kotlinx.coroutines.launch
 @Composable
 fun MainScreen() {
     val context = LocalContext.current
+    val appSettings = remember { AppSettings(context) }
+    val loaded by appSettings.flow.collectAsStateWithLifecycle(initialValue = null)
+    val settings = loaded ?: run {
+        Box(Modifier.fillMaxSize().background(JakoTheme.colors.root))
+        return
+    }
     fun granted(p: String) = ContextCompat.checkSelfPermission(context, p) == PackageManager.PERMISSION_GRANTED
     var hasCamera by remember { mutableStateOf(granted(Manifest.permission.CAMERA)) }
     var hasMic by remember { mutableStateOf(granted(Manifest.permission.RECORD_AUDIO)) }
@@ -108,10 +115,16 @@ fun MainScreen() {
     val permissions = arrayOf(Manifest.permission.CAMERA, Manifest.permission.RECORD_AUDIO)
     LaunchedEffect(Unit) { if (!hasCamera || !hasMic) launcher.launch(permissions) }
 
-    val state = rememberCameraState()
+    val state = rememberCameraState(settings.maxFaces, settings.activeProfile)
     LaunchedEffect(state) { state.loadProfile() }
 
-    var front by rememberSaveable { mutableStateOf(true) }
+    var front by rememberSaveable { mutableStateOf(settings.frontCamera) }
+    var settingsOpen by rememberSaveable { mutableStateOf(false) }
+    LaunchedEffect(settings.watermark) { state.setWatermarkEnabled(settings.watermark) }
+    LaunchedEffect(settings.videoQuality) { state.videoQuality = settings.videoQuality }
+    LaunchedEffect(state) {
+        state.voice.setMode(if (settings.soundMode == 0) SoundMode.SILENT else SoundMode.PARROT)
+    }
     var showMesh by rememberSaveable { mutableStateOf(false) }
     var maskOn by rememberSaveable { mutableStateOf(true) }
     var voiceOn by rememberSaveable { mutableStateOf(true) }
@@ -121,6 +134,7 @@ fun MainScreen() {
     var sheetOpen by rememberSaveable { mutableStateOf(false) }
     var voiceSheetOpen by rememberSaveable { mutableStateOf(false) }
     var galleryOpen by rememberSaveable { mutableStateOf(false) }
+    var updateRequested by remember { mutableStateOf(false) }
     var countdown by remember { mutableIntStateOf(0) }
     var recording by remember { mutableStateOf(false) }
     var elapsed by remember { mutableIntStateOf(0) }
@@ -154,7 +168,7 @@ fun MainScreen() {
         while (recording) {
             delay(1000)
             elapsed += 1
-            if (elapsed >= MAX_RECORDING_SEC) stopRecording()
+            if (elapsed >= settings.maxRecordingSec) stopRecording()
         }
     }
     val hazeState = remember { HazeState() }
@@ -212,15 +226,16 @@ fun MainScreen() {
             )
             val status: @Composable () -> Unit = {
                 if (imageMode == ImageMode.PUPPET && state.profile != null) PuppetHint(state)
-                if (recording) RecordingPill(elapsed, MAX_RECORDING_SEC)
+                if (recording) RecordingPill(elapsed, settings.maxRecordingSec)
                 else if (hasMic && voiceOn) ParrotPill(state)
             }
             val center: @Composable () -> Unit = {
                 when {
                     !hasCamera || !hasMic -> PermissionCard { launcher.launch(permissions) }
                     countdown > 0 -> CountdownOverlay(countdown)
-                    galleryOpen -> GalleryScreen(state.library) { galleryOpen = false }
-                    lastItem != null && !recording -> ResultCard(lastItem!!, state.library) { lastItem = null }
+                    settingsOpen -> SettingsScreen(state, settings, onCheckUpdate = { updateRequested = true }) { settingsOpen = false }
+                    galleryOpen -> GalleryScreen(state.library, settings.sharingAllowed) { galleryOpen = false }
+                    lastItem != null && !recording -> ResultCard(lastItem!!, state.library, settings.sharingAllowed) { lastItem = null }
                     voiceSheetOpen -> VoiceSheet(state) { voiceSheetOpen = false }
                     sheetOpen || state.profile == null -> ProfileSheet(
                         state, canClose = state.profile != null,
@@ -234,6 +249,11 @@ fun MainScreen() {
                     ProfileChip(state) { sheetOpen = true }
                     Spacer(Modifier.weight(1f))
                     if (hasMic) SoundModeChip(state)
+                    GlassBox(shape = androidx.compose.foundation.shape.CircleShape) {
+                        RoundIcon(JakoIcons.Sliders, stringResource(R.string.action_settings), enabled = !recording) {
+                            galleryOpen = false; lastItem = null; settingsOpen = !settingsOpen
+                        }
+                    }
                 }
             }
             BoxWithConstraints(Modifier.fillMaxSize().safeDrawingPadding().padding(JakoDimens.gutter)) {
@@ -370,7 +390,7 @@ private fun ProfileSheet(state: CameraState, canClose: Boolean, onRecordVoice: (
     var consent by rememberSaveable { mutableStateOf(false) }
     var busy by remember { mutableStateOf(false) }
     var message by remember { mutableStateOf<Int?>(null) }
-    val name = stringResource(R.string.profile_default_name)
+    val name = state.pendingName.ifBlank { stringResource(R.string.profile_default_name) }
 
     fun handle(result: FaceProfileBuilder.Result?) {
         message = when (result) {
@@ -491,6 +511,3 @@ private fun PermissionCard(onRequest: () -> Unit) {
         }
     }
 }
-
-/** Max. délka nahrávky (zadání kap. 6.4; nastavitelné v milníku 8). */
-private const val MAX_RECORDING_SEC = 120

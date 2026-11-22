@@ -466,15 +466,17 @@ class CameraRenderer(
     private fun drawMask(m: DisplayMapping, half: Boolean = false) {
         if (!mask.hasProfile) return
         val frame = faceSource() ?: return
-        if (frame.faces.isEmpty()) return
-        val face = frame.predicted(0, currentFrameNs, predictedFace)
         val (fx, fy) = analysisCorrection(frame)
-        val tilt = frame.matrices.firstOrNull()?.let { FaceTopology.headTiltDegrees(it) } ?: 0f
-        mask.draw(
-            face, fx, fy, tilt, m, cameraMirror = m.mirror != textureMirrored,
-            cameraTex = cameraTexId, texMatrix = texMatrix, shaderRotation = shaderRotation,
-            kidSkin = kidSkinSource(), amount = maskAmount, dadEyes = dadEyes, half = half,
-        )
+        // Táta na každém nalezeném obličeji (nastavení „počet obličejů“ 1–2, zadání kap. 2.1).
+        for (i in frame.faces.indices) {
+            val face = frame.predicted(i, currentFrameNs, predictedFace)
+            val tilt = frame.matrices.getOrNull(i)?.let { FaceTopology.headTiltDegrees(it) } ?: 0f
+            mask.draw(
+                face, fx, fy, tilt, m, cameraMirror = m.mirror != textureMirrored,
+                cameraTex = cameraTexId, texMatrix = texMatrix, shaderRotation = shaderRotation,
+                kidSkin = kidSkinSource(), amount = maskAmount, dadEyes = dadEyes, half = half,
+            )
+        }
     }
 
     private fun analysisCorrection(frame: FaceFrame): Pair<Float, Float> {

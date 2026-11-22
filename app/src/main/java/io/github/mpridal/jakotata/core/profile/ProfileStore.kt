@@ -16,12 +16,12 @@ import java.io.File
  * Mimo zálohu Google (dataExtractionRules). Nic se nemaže natvrdo – starý profil jde do koše
  * `files/trash/`, odkud ho lze obnovit.
  */
-class ProfileStore(context: Context) {
+class ProfileStore(context: Context, val id: String = DEFAULT_ID) {
     private val root = File(context.filesDir, "profiles")
     private val trash = File(context.filesDir, "trash")
 
-    // Fáze 1 umí jeden profil; datový model počítá se složkou na profil (max. 5).
-    private val dir = File(root, DEFAULT_ID)
+    // Složka na profil (táta, máma, děda… max. 5, zadání kap. 1).
+    private val dir = File(root, id)
 
     fun load(): FaceProfile? = try {
         val json = File(dir, FACE_JSON)
@@ -75,18 +75,65 @@ class ProfileStore(context: Context) {
     private fun trashFiles(vararg names: String) {
         val existing = names.map { File(dir, it) }.filter { it.exists() }
         if (existing.isEmpty()) return
-        val target = File(trash, "${System.currentTimeMillis()}-$DEFAULT_ID").apply { mkdirs() }
+        val target = File(trash, "${System.currentTimeMillis()}-$id").apply { mkdirs() }
         for (f in existing) if (!f.renameTo(File(target, f.name))) Log.w(TAG, "Move to trash failed: $f")
+    }
+
+    // ---- Tréninkové nahrávky pro fázi 2 (zadání kap. 3.4 a 6.7) ----
+
+    private val trainingDir get() = File(dir, "training")
+
+    fun trainingFiles(): List<File> = trainingDir.listFiles { f -> f.extension == "wav" }?.sortedBy { it.name }.orEmpty()
+
+    /** Celková délka tréninkových nahrávek [s] (16bit mono 48 kHz). */
+    fun trainingSeconds(): Float = trainingFiles().sumOf { (it.length() - 44).coerceAtLeast(0) } / 2f / 48000f
+
+    fun saveTraining(pcm: FloatArray) {
+        trainingDir.mkdirs()
+        val next = (trainingFiles().size + 1).toString().padStart(3, '0')
+        VoiceProfileRecorder.writeWav(File(trainingDir, "chapter_$next.wav"), pcm)
+    }
+
+    /** ZIP s WAV soubory (tréninkové + původní nahrávka hlasu) do zvoleného výstupu. */
+    fun exportTrainingZip(out: java.io.OutputStream) {
+        java.util.zip.ZipOutputStream(out).use { zip ->
+            val files = trainingFiles() + listOfNotNull(File(dir, VOICE_WAV).takeIf { it.exists() })
+            for (f in files) {
+                zip.putNextEntry(java.util.zip.ZipEntry(f.name))
+                f.inputStream().use { it.copyTo(zip) }
+                zip.closeEntry()
+            }
+        }
+    }
+
+    /** Celý profil do koše (obnovitelné). */
+    fun moveProfileToTrash() {
+        if (!dir.exists()) return
+        trash.mkdirs()
+        if (!dir.renameTo(File(trash, "${System.currentTimeMillis()}-$id"))) Log.w(TAG, "Move to trash failed: $dir")
     }
 
     private fun JSONArray.toFloatArray() = FloatArray(length()) { getDouble(it).toFloat() }
 
-    private companion object {
-        const val TAG = "ProfileStore"
+    companion object {
+        private const val TAG = "ProfileStore"
         const val DEFAULT_ID = "default"
-        const val FACE_IMAGE = "face.jpg"
-        const val FACE_JSON = "face.json"
-        const val VOICE_JSON = "voice.json"
-        const val VOICE_WAV = "voice.wav"
+        const val MAX_PROFILES = 5
+
+        /** Id existujících profilů (složky s obličejem). */
+        fun ids(context: Context): List<String> =
+            File(context.filesDir, "profiles").listFiles { f -> f.isDirectory && File(f, "face.json").exists() }
+                ?.sortedBy { it.lastModified() }?.map { it.name }.orEmpty()
+
+        fun newId(): String = "p" + System.currentTimeMillis()
+
+        /** Jméno profilu z face.json (prázdné, když chybí). */
+        fun name(context: Context, id: String): String = runCatching {
+            JSONObject(File(File(context.filesDir, "profiles"), "$id/face.json").readText()).optString("name")
+        }.getOrDefault("")
+        private const val FACE_IMAGE = "face.jpg"
+        private const val FACE_JSON = "face.json"
+        private const val VOICE_JSON = "voice.json"
+        private const val VOICE_WAV = "voice.wav"
     }
 }

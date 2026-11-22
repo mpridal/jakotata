@@ -77,6 +77,40 @@
 
     <string name="puppet_neutral">Make a serious face</string>
 
+    <string name="parent_zone">Parent zone</string>
+    <string name="settings_language">Language</string>
+    <string name="option_system">System</string>
+    <string name="settings_theme">Theme</string>
+    <string name="theme_light">Light</string>
+    <string name="theme_dark">Dark</string>
+    <string name="settings_quality">Video quality</string>
+    <string name="settings_max_length">Max. recording length</string>
+    <string name="settings_camera">Default camera</string>
+    <string name="camera_front">Front</string>
+    <string name="camera_back">Back</string>
+    <string name="settings_sound">Default sound mode</string>
+    <string name="settings_faces">Number of faces</string>
+    <string name="settings_auto_update">Check for updates automatically</string>
+    <string name="update_check_now">Check now</string>
+    <string name="settings_version">Version %1$s</string>
+    <string name="about_licenses">JakoTáta works offline; photos, voice and recordings never leave the device. Libraries: MediaPipe, CameraX, Oboe (Apache 2.0), Signalsmith Stretch (MIT), fonts Nunito and Baloo 2 (OFL).</string>
+    <string name="parent_gate">For parents: how much is %1$d × %2$d?</string>
+    <string name="parent_watermark">Watermark on recordings</string>
+    <string name="parent_sharing">Allow sharing</string>
+    <string name="parent_profiles">Profiles</string>
+    <string name="parent_new_profile_name">Name of the new profile (e.g. Mum)</string>
+    <string name="parent_add_profile">Add profile</string>
+    <string name="parent_trash_profile">Move this profile to trash</string>
+    <string name="parent_trash_confirm">The profile (face, voice, training recordings) will be moved to the app trash and can be restored.</string>
+    <string name="action_cancel">Cancel</string>
+    <string name="training_title">Training recordings (phase 2)</string>
+    <string name="training_progress">Recorded: %1$.1f of 30 min</string>
+    <string name="training_hint">Read aloud anything you like (a book, a story) in a quiet room. Chapters of up to 5 minutes.</string>
+    <string name="training_record">Record a chapter</string>
+    <string name="training_export">Export ZIP with WAV files</string>
+    <string name="training_exported">Exported.</string>
+    <string name="training_export_failed">Export failed.</string>
+
     <plurals name="seconds">
         <item quantity="one">%d second</item>
         <item quantity="other">%d seconds</item>

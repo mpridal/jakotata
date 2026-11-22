@@ -75,6 +75,40 @@
 
     <string name="puppet_neutral">Udělej vážný obličej</string>
 
+    <string name="parent_zone">Rodičovská zóna</string>
+    <string name="settings_language">Jazyk</string>
+    <string name="option_system">Podle systému</string>
+    <string name="settings_theme">Vzhled</string>
+    <string name="theme_light">Světlý</string>
+    <string name="theme_dark">Tmavý</string>
+    <string name="settings_quality">Kvalita videa</string>
+    <string name="settings_max_length">Max. délka nahrávky</string>
+    <string name="settings_camera">Výchozí kamera</string>
+    <string name="camera_front">Přední</string>
+    <string name="camera_back">Zadní</string>
+    <string name="settings_sound">Výchozí režim zvuku</string>
+    <string name="settings_faces">Počet obličejů</string>
+    <string name="settings_auto_update">Automaticky kontrolovat aktualizace</string>
+    <string name="update_check_now">Zkontrolovat teď</string>
+    <string name="settings_version">Verze %1$s</string>
+    <string name="about_licenses">JakoTáta funguje bez internetu; fotky, hlas ani nahrávky nikdy neopustí zařízení. Knihovny: MediaPipe, CameraX, Oboe (Apache 2.0), Signalsmith Stretch (MIT), písma Nunito a Baloo 2 (OFL).</string>
+    <string name="parent_gate">Pro rodiče: kolik je %1$d × %2$d?</string>
+    <string name="parent_watermark">Vodoznak na nahrávkách</string>
+    <string name="parent_sharing">Povolit sdílení</string>
+    <string name="parent_profiles">Profily</string>
+    <string name="parent_new_profile_name">Jméno nového profilu (např. Máma)</string>
+    <string name="parent_add_profile">Přidat profil</string>
+    <string name="parent_trash_profile">Přesunout tento profil do koše</string>
+    <string name="parent_trash_confirm">Profil (obličej, hlas, tréninkové nahrávky) se přesune do koše aplikace a půjde obnovit.</string>
+    <string name="action_cancel">Zrušit</string>
+    <string name="training_title">Tréninkové nahrávky (fáze 2)</string>
+    <string name="training_progress">Nahráno: %1$.1f z 30 min</string>
+    <string name="training_hint">Čti nahlas cokoli (knížku, pohádku) v tiché místnosti. Kapitoly po nejvýš 5 minutách.</string>
+    <string name="training_record">Nahrát kapitolu</string>
+    <string name="training_export">Exportovat ZIP s WAV soubory</string>
+    <string name="training_exported">Exportováno.</string>
+    <string name="training_export_failed">Export se nepovedl.</string>
+
     <plurals name="seconds">
         <item quantity="one">%d sekunda</item>
         <item quantity="few">%d sekundy</item>
