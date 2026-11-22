@@ -264,17 +264,19 @@ fun MainScreen() {
             }
             val center: @Composable () -> Unit = {
                 when {
-                    !hasCamera || !hasMic -> PermissionCard { launcher.launch(permissions) }
-                    countdown > 0 -> CountdownOverlay(countdown)
-                    updateResult != null && !recording -> UpdateCard(updateResult!!, updater) { updateResult = null }
+                    !hasCamera || !hasMic -> Scrollable { PermissionCard { launcher.launch(permissions) } }
+                    countdown > 0 -> Scrollable { CountdownOverlay(countdown) }
+                    updateResult != null && !recording -> Scrollable { UpdateCard(updateResult!!, updater) { updateResult = null } }
                     settingsOpen -> SettingsScreen(state, settings, onCheckUpdate = { settingsOpen = false; updateRequested = true }) { settingsOpen = false }
                     galleryOpen -> GalleryScreen(state.library, settings.sharingAllowed) { galleryOpen = false }
-                    lastItem != null && !recording -> ResultCard(lastItem!!, state.library, settings.sharingAllowed) { lastItem = null }
-                    voiceSheetOpen -> VoiceSheet(state) { voiceSheetOpen = false }
-                    sheetOpen || state.profile == null -> ProfileSheet(
-                        state, canClose = state.profile != null,
-                        onRecordVoice = { sheetOpen = false; voiceSheetOpen = true },
-                    ) { sheetOpen = false }
+                    lastItem != null && !recording -> Scrollable { ResultCard(lastItem!!, state.library, settings.sharingAllowed) { lastItem = null } }
+                    voiceSheetOpen -> Scrollable { VoiceSheet(state) { voiceSheetOpen = false } }
+                    sheetOpen || state.profile == null -> Scrollable {
+                        ProfileSheet(
+                            state, canClose = state.profile != null,
+                            onRecordVoice = { sheetOpen = false; voiceSheetOpen = true },
+                        ) { sheetOpen = false }
+                    }
                     else -> Unit
                 }
             }
@@ -300,7 +302,7 @@ fun MainScreen() {
                             Column(Modifier.weight(1f).fillMaxHeight(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                                 status()
                                 if (BuildConfig.DEBUG) DebugOverlay(state, showMesh) { showMesh = !showMesh }
-                                Box(Modifier.fillMaxWidth().weight(1f).verticalScroll(rememberScrollState()), contentAlignment = Alignment.Center) { center() }
+                                Box(Modifier.fillMaxWidth().weight(1f), contentAlignment = Alignment.Center) { center() }
                             }
                             ActionRail(controls, Modifier.align(Alignment.CenterVertically))
                         }
@@ -310,13 +312,19 @@ fun MainScreen() {
                         topBar()
                         status()
                         if (BuildConfig.DEBUG) DebugOverlay(state, showMesh) { showMesh = !showMesh }
-                        Box(Modifier.fillMaxWidth().weight(1f).verticalScroll(rememberScrollState()), contentAlignment = Alignment.Center) { center() }
+                        Box(Modifier.fillMaxWidth().weight(1f), contentAlignment = Alignment.Center) { center() }
                         PhonePanel(controls)
                     }
                 }
             }
         }
     }
+}
+
+/** Panel, který se na malém displeji může posunout (nastavení a galerie rolují samy). */
+@Composable
+private fun Scrollable(content: @Composable () -> Unit) {
+    Box(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()), contentAlignment = Alignment.Center) { content() }
 }
 
 /** Ikona režimu zvuku (zadání kap. 6.3): klepnutím Papoušek → (Sluchátka) → Ticho. */
