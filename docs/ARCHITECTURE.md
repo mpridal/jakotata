@@ -103,3 +103,18 @@ na nový telefon (zadání kap. 8). `INTERNET` jen pro kontrolu aktualizací.
   (medián a rozsah F0, formanty, spektrum, ořez, odstup od šumu), kontrola kvality, `voice.json` + `voice.wav`.
 - **Testy C++ lokálně** (Windows bez hostitelského překladače): NDK + GoogleTest z NDK, spuštění na
   zařízení/emulátoru přes adb (`-DJAKOTATA_DEVICE_TESTS=ON -DJAKOTATA_GTEST_DIR=<NDK>/sources/third_party/googletest`).
+
+## Nahrávání (milník 5)
+
+- **Video:** renderer kreslí každý snímek podruhé do vstupní Surface enkodéru H.264 (720p30) přes
+  vlastní EGL surface ve sdíleném kontextu; čas snímku = časová značka kamery převedená na
+  CLOCK_MONOTONIC (`eglPresentationTimeANDROID`). Maska i vodoznak jsou v nahrávce, vodoznak v náhledu ne.
+- **Zvuk:** v audio callbacku třetí převodník (`rec_`, malý blok) → kruhový buffer → pumpa v Kotlinu
+  → AAC 48 kHz mono. Čas prvního vzorku z `AudioStream::getTimestamp(CLOCK_MONOTONIC)`, od času
+  zvuku se odečítá latence převodu. Během přehrávání Papouška se do nahrávky píše ticho (bez ozvěny).
+- **MP4:** `MediaMuxer` startuje, až jsou známé formáty obou stop; dřívější vzorky se kopírují do fronty.
+  Ověřeno na Pixelu: 2 stopy, 30 fps, synchronizace zvuku v pořádku.
+- **Galerie:** `MediaStore`, `Movies/JakoTata` a `Pictures/JakoTata`, popis „Upraveno aplikací JakoTáta“.
+  Mazání do systémového koše (`createTrashRequest`, API 30+), jinak vlastní koš `files/media_trash/`.
+- **Předpověď pohybu masky:** detekce trvá 25–45 ms, maska by zaostávala. Tracker ukládá čas pořízení
+  snímku a rychlost bodů; renderer body posune do času kresleného snímku (max. 120 ms).

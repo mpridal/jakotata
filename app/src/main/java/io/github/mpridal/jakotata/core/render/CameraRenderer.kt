@@ -415,10 +415,16 @@ class CameraRenderer(
         callback(renderOffscreen(w, h) { drawCamera(DisplayMapping(1f, 1f, mirror = false)) })
     }
 
+    private val predictedFace = FloatArray(478 * 3)
+
+    /** Čas právě kresleného snímku kamery (pro předpověď pohybu bodů). */
+    private val currentFrameNs: Long get() = cameraTexture?.timestamp ?: 0L
+
     private fun drawMask(m: DisplayMapping) {
         if (!mask.hasProfile) return
         val frame = faceSource() ?: return
-        val face = frame.faces.firstOrNull() ?: return
+        if (frame.faces.isEmpty()) return
+        val face = frame.predicted(0, currentFrameNs, predictedFace)
         val (fx, fy) = analysisCorrection(frame)
         val tilt = frame.matrices.firstOrNull()?.let { FaceTopology.headTiltDegrees(it) } ?: 0f
         mask.draw(

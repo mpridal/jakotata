@@ -31,7 +31,24 @@ class FaceFrame(
     val timestampNs: Long,
     /** Poměr stran (šířka/výška) narovnaného snímku, na kterém detekce běžela. */
     val imageAspect: Float,
-)
+    /** Čas pořízení snímku kamerou [ns] – stejná časová osa jako časové značky náhledu. */
+    val captureNs: Long = 0L,
+    /** Rychlost bodů [jednotek/ns] na obličej pro předpověď pohybu (kompenzace zpoždění detekce). */
+    val velocities: List<FloatArray> = emptyList(),
+) {
+    /**
+     * Body obličeje [face] posunuté dopředu do času [targetNs] podle rychlosti (max. 120 ms).
+     * Detekce trvá desítky ms, takže bez předpovědi maska za obličejem viditelně zaostává.
+     */
+    fun predicted(face: Int, targetNs: Long, out: FloatArray): FloatArray {
+        val src = faces[face]
+        val v = velocities.getOrNull(face)
+        val dt = (targetNs - captureNs).coerceIn(0L, 120_000_000L).toFloat()
+        if (v == null || captureNs == 0L || dt == 0f || v.size != src.size || out.size < src.size) return src
+        for (i in src.indices) out[i] = src[i] + v[i] * dt
+        return out
+    }
+}
 
 /**
  * Sledování obličeje přes MediaPipe Face Landmarker v režimu LIVE_STREAM (zadání kap. 2.1).
@@ -62,6 +79,10 @@ class FaceTracker(context: Context, private val maxFaces: Int = 1) : ImageAnalys
     private val smoothers = Array(2) { LandmarkSmoother() }
     private val startTimes = ConcurrentHashMap<Long, Long>()
     private val aspects = ConcurrentHashMap<Long, Float>()
+    private val captureTimes = ConcurrentHashMap<Long, Long>()
+    private var prevFaces: List<FloatArray> = emptyList()
+    private var prevVel: List<FloatArray> = emptyList()
+    private var prevCaptureNs = 0L
     private var lastTimestampMs = 0L
     private val appContext = context.applicationContext
     private val lock = Any()
@@ -109,6 +130,7 @@ class FaceTracker(context: Context, private val maxFaces: Int = 1) : ImageAnalys
                 Bitmap.createBitmap(raw, 0, 0, raw.width, raw.height, Matrix().apply { postRotate(rot.toFloat()) }, false)
             } else raw
             aspects[ts] = bitmap.width.toFloat() / bitmap.height
+            captureTimes[ts] = it.imageInfo.timestamp
             pendingBitmaps[ts] = bitmap
             PerfStats.analysisSize = "${it.width}x${it.height}r$rot"
             synchronized(lock) {
@@ -124,6 +146,8 @@ class FaceTracker(context: Context, private val maxFaces: Int = 1) : ImageAnalys
         val now = System.nanoTime()
         val started = startTimes.remove(result.timestampMs()) ?: now
         val aspect = aspects.remove(result.timestampMs()) ?: 0f
+        val captureNs = captureTimes.remove(result.timestampMs()) ?: 0L
+        captureTimes.keys.filter { it < result.timestampMs() }.forEach { captureTimes.remove(it) }
         val bitmap = pendingBitmaps.remove(result.timestampMs())
         pendingBitmaps.keys.filter { it < result.timestampMs() }.forEach { pendingBitmaps.remove(it) }
         val faces = result.faceLandmarks().take(smoothers.size).mapIndexed { i, landmarks ->
@@ -139,7 +163,19 @@ class FaceTracker(context: Context, private val maxFaces: Int = 1) : ImageAnalys
             FloatArray(cats.size) { k -> cats[k].score() }
         }
         val matrices = result.facialTransformationMatrixes().orElse(emptyList())
-        latest.set(FaceFrame(faces, blendshapes, matrices, now, aspect))
+        // Rychlost bodů mezi posledními dvěma detekcemi (vyhlazená), pro předpověď v rendereru.
+        val dtNs = (captureNs - prevCaptureNs).toFloat()
+        val velocities = faces.mapIndexed { i, f ->
+            val prev = prevFaces.getOrNull(i)
+            val pv = prevVel.getOrNull(i)
+            if (prev == null || prev.size != f.size || dtNs <= 0f || dtNs > 200_000_000f) FloatArray(f.size)
+            else FloatArray(f.size) { k ->
+                val v = (f[k] - prev[k]) / dtNs
+                if (pv != null && pv.size == f.size) pv[k] * 0.4f + v * 0.6f else v
+            }
+        }
+        prevFaces = faces; prevVel = velocities; prevCaptureNs = captureNs
+        latest.set(FaceFrame(faces, blendshapes, matrices, now, aspect, captureNs, velocities))
         // Barva kůže stačí každý 3. snímek (šetří CPU), vyhlazená klouzavým průměrem.
         if (bitmap != null && faces.isNotEmpty() && skinFrame++ % 3 == 0) updateKidSkin(bitmap, faces[0])
         PerfStats.onDetection(now - started, faces.size)
