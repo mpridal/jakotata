@@ -180,7 +180,7 @@ fun MainScreen() {
     Box(Modifier.fillMaxSize().background(c.root)) {
         Box(Modifier.fillMaxSize().hazeSource(hazeState)) {
             if (hasCamera) {
-                CameraPreview(state, front, showMesh, maskOn, amount, dadEyes, Modifier.fillMaxSize())
+                CameraPreview(state, front, showMesh, maskOn, amount, dadEyes, imageMode, Modifier.fillMaxSize())
             }
         }
         CompositionLocalProvider(LocalHazeState provides hazeState) {
@@ -211,6 +211,7 @@ fun MainScreen() {
                 onSwitchCamera = { front = !front },
             )
             val status: @Composable () -> Unit = {
+                if (imageMode == ImageMode.PUPPET && state.profile != null) PuppetHint(state)
                 if (recording) RecordingPill(elapsed, MAX_RECORDING_SEC)
                 else if (hasMic && voiceOn) ParrotPill(state)
             }
@@ -281,6 +282,24 @@ private fun SoundModeChip(state: CameraState) {
             androidx.compose.material3.Icon(icon, null, tint = JakoTheme.colors.onGlass)
             Spacer(Modifier.width(8.dp))
             Text(stringResource(label), style = MaterialTheme.typography.labelLarge, color = JakoTheme.colors.onGlass)
+        }
+    }
+}
+
+/** „Udělej vážný obličej“ během kalibrace Loutky (zadání kap. 2.4). */
+@Composable
+private fun PuppetHint(state: CameraState) {
+    var calibrating by remember { mutableStateOf(true) }
+    LaunchedEffect(Unit) {
+        while (true) { calibrating = state.renderer.puppetCalibrating; delay(100) }
+    }
+    if (!calibrating) return
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
+        GlassBox(shape = RoundedCornerShape(50)) {
+            Text(
+                stringResource(R.string.puppet_neutral), modifier = Modifier.padding(horizontal = 18.dp, vertical = 12.dp),
+                style = MaterialTheme.typography.labelLarge, color = JakoTheme.colors.onGlass,
+            )
         }
     }
 }

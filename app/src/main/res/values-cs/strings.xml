@@ -73,6 +73,8 @@
 
     <string name="image_mode">Režim obrazu</string>
 
+    <string name="puppet_neutral">Udělej vážný obličej</string>
+
     <plurals name="seconds">
         <item quantity="one">%d sekunda</item>
         <item quantity="few">%d sekundy</item>

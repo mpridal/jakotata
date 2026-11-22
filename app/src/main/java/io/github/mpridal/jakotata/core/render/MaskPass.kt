@@ -35,11 +35,21 @@ internal class MaskPass(private val topo: MaskTopology) {
     private var uv: FloatBuffer? = null
     private var alphaHoles: FloatBuffer? = null
     private var alphaDadEyes: FloatBuffer? = null
+    /** Pro Loutku: jen díra pro ústa (oči jsou tátovy z fotky). */
+    var alphaMouthOnly: FloatBuffer? = null
+        private set
+    /** Body táty ve výřezu fotky [x, y, z…] – sdílí Loutka. */
+    var dadCoords: FloatArray? = null
+        private set
+    /** x středu obličeje táty (hřbet nosu) v textuře – hranice pro Půl na půl. */
+    private var midX = 0.5f
     private val positions = GlUtil.floatBuffer(FaceTopology.MESH_VERTICES * 2)
     private val indices: ShortBuffer = ByteBuffer.allocateDirect(topo.triangles.size * 2).order(ByteOrder.nativeOrder())
         .asShortBuffer().apply { topo.triangles.forEach { put(it.toShort()) }; position(0) }
 
     val hasProfile get() = dadTex != 0
+    val dadTexture get() = dadTex
+    val uvBuffer get() = uv
 
     fun init() {
         program = GlUtil.program(VS, FS)
@@ -47,7 +57,7 @@ internal class MaskPass(private val topo: MaskTopology) {
 
     fun setProfile(profile: FaceProfile?) {
         if (dadTex != 0) { GLES30.glDeleteTextures(1, intArrayOf(dadTex), 0); dadTex = 0 }
-        uv = null; alphaHoles = null; alphaDadEyes = null; dadSkin = null
+        uv = null; alphaHoles = null; alphaDadEyes = null; alphaMouthOnly = null; dadSkin = null; dadCoords = null
         if (profile == null) return
         val t = IntArray(1)
         GLES30.glGenTextures(1, t, 0)
@@ -64,6 +74,9 @@ internal class MaskPass(private val topo: MaskTopology) {
         val lips = FaceTopology.INNER_LIPS
         alphaHoles = GlUtil.floatBuffer(FaceTopology.vertexAlpha(profile.coords, topo.oval, listOf(topo.leftEye, topo.rightEye, lips)))
         alphaDadEyes = GlUtil.floatBuffer(FaceTopology.vertexAlpha(profile.coords, topo.oval, listOf(lips)))
+        alphaMouthOnly = alphaDadEyes
+        dadCoords = profile.coords
+        midX = profile.coords[FaceTopology.NOSE_BRIDGE * 3]
         dadSkin = profile.skin
     }
 
@@ -76,6 +89,8 @@ internal class MaskPass(private val topo: MaskTopology) {
         mapping: DisplayMapping, cameraMirror: Boolean,
         cameraTex: Int, texMatrix: FloatArray, shaderRotation: Int,
         kidSkin: SkinStats?, amount: Float, dadEyes: Boolean,
+        /** Půl na půl: táta jen na polovině obličeje, která je na obrazovce vlevo. */
+        half: Boolean = false,
     ) {
         val uvBuf = uv ?: return
         val alphaBuf = (if (dadEyes) alphaDadEyes else alphaHoles) ?: return
@@ -112,6 +127,9 @@ internal class MaskPass(private val topo: MaskTopology) {
         GLES30.glUniform1f(loc("uKidLuma"), max(kid.luma, 0.05f))
         GLES30.glUniform1f(loc("uShade"), SHADE_STRENGTH)
         GLES30.glUniform1f(loc("uAmount"), strength)
+        // Levá polovina na obrazovce: u zrcadleného náhledu je to pravá strana obrázku (větší x).
+        GLES30.glUniform1f(loc("uHalf"), if (!half) 0f else if (mapping.mirror) 2f else 1f)
+        GLES30.glUniform1f(loc("uMidX"), midX)
 
         val aPt = GLES30.glGetAttribLocation(program, "aPt")
         val aUv = GLES30.glGetAttribLocation(program, "aUv")
@@ -183,6 +201,8 @@ uniform vec3 uKidStd;
 uniform float uKidLuma;
 uniform float uShade;
 uniform float uAmount;
+uniform float uHalf;
+uniform float uMidX;
 in vec2 vUv;
 in float vAlpha;
 in vec2 vCam;
@@ -231,7 +251,10 @@ void main() {
     }
     float shade = clamp((s / 9.0) / uKidLuma, 0.75, 1.25);
     c *= mix(1.0, shade, uShade);
-    outColor = vec4(clamp(c, 0.0, 1.0), vAlpha * uAmount);
+    float side = 1.0;
+    if (uHalf > 1.5) side = smoothstep(uMidX - 0.012, uMidX + 0.012, vUv.x);
+    else if (uHalf > 0.5) side = smoothstep(uMidX + 0.012, uMidX - 0.012, vUv.x);
+    outColor = vec4(clamp(c, 0.0, 1.0), vAlpha * uAmount * side);
 }"""
     }
 }

@@ -50,6 +50,14 @@ class CameraRenderer(
     @Volatile var dadEyes: Boolean = false
 
     private val mask = MaskPass(maskTopology)
+    private val puppet = PuppetPass(maskTopology)
+
+    /** Režim obrazu (zadání kap. 2.3–2.5). */
+    @Volatile var imageMode: ImageMode = ImageMode.MASK
+    private var lastMode = ImageMode.MASK
+
+    /** Loutka sbírá neutrální výraz dcery („Udělej vážný obličej“). */
+    val puppetCalibrating: Boolean get() = imageMode == ImageMode.PUPPET && puppet.calibrating
 
     // Nahrávání videa: druhý výstup do vstupní Surface enkodéru (zadání kap. 4).
     private var encoder: EGLSurface = EGL14.EGL_NO_SURFACE
@@ -162,6 +170,7 @@ class CameraRenderer(
         cameraProgram = GlUtil.program(CAMERA_VS, CAMERA_FS)
         meshProgram = GlUtil.program(MESH_VS, MESH_FS)
         mask.init()
+        puppet.init()
         watermarkProgram = GlUtil.program(WATERMARK_VS, WATERMARK_FS)
     }
 
@@ -240,9 +249,8 @@ class CameraRenderer(
         GLES30.glClearColor(0.17f, 0.14f, 0.2f, 1f)
         GLES30.glClear(GLES30.GL_COLOR_BUFFER_BIT)
         val mapping = DisplayMapping.cover(bufferW, bufferH, rotation, viewW, viewH, mirror)
-        if (st != null && hasFrame) drawCamera(mapping)
-        if (st != null && hasFrame && maskEnabled) drawMask(mapping)
-        if (showMesh) drawMesh(mapping)
+        if (st != null && hasFrame) drawScene(viewW, viewH)
+        if (showMesh && imageMode == ImageMode.MASK) drawMesh(mapping)
         EGL14.eglSwapBuffers(eglDisplay, window)
 
         if (st != null && hasFrame && encoder != EGL14.EGL_NO_SURFACE) drawToEncoder(st.timestamp)
@@ -317,9 +325,7 @@ class CameraRenderer(
         if (!hasFrame || bufferW == 0) { callback(null); return@post }
         makeCurrent()
         callback(renderOffscreen(width, height) {
-            val m = DisplayMapping.cover(bufferW, bufferH, rotation, width, height, mirror)
-            drawCamera(m)
-            if (maskEnabled) drawMask(m)
+            drawScene(width, height)
             drawWatermark(width, height)
         })
     }
@@ -336,9 +342,7 @@ class CameraRenderer(
         GLES30.glViewport(0, 0, encW, encH)
         GLES30.glClearColor(0f, 0f, 0f, 1f)
         GLES30.glClear(GLES30.GL_COLOR_BUFFER_BIT)
-        val m = DisplayMapping.cover(bufferW, bufferH, rotation, encW, encH, mirror)
-        drawCamera(m)
-        if (maskEnabled) drawMask(m)
+        drawScene(encW, encH)
         drawWatermark(encW, encH)
         EGLExt.eglPresentationTimeANDROID(eglDisplay, encoder, pts)
         EGL14.eglSwapBuffers(eglDisplay, encoder)
@@ -420,7 +424,46 @@ class CameraRenderer(
     /** Čas právě kresleného snímku kamery (pro předpověď pohybu bodů). */
     private val currentFrameNs: Long get() = cameraTexture?.timestamp ?: 0L
 
-    private fun drawMask(m: DisplayMapping) {
+    /** Celá scéna podle režimu obrazu do výstupu w×h (obrazovka, enkodér i fotka). */
+    private fun drawScene(w: Int, h: Int) {
+        val mode = imageMode
+        if (mode != lastMode) {
+            if (mode == ImageMode.PUPPET) puppet.resetNeutral()
+            lastMode = mode
+        }
+        when (mode) {
+            ImageMode.PUPPET -> {
+                val frame = faceSource()
+                if (!mask.hasProfile) { drawCamera(DisplayMapping.cover(bufferW, bufferH, rotation, w, h, mirror)); return }
+                val face = if (frame != null && frame.faces.isNotEmpty()) frame.predicted(0, currentFrameNs, predictedFace) else null
+                puppet.draw(mask, face, frame?.imageAspect ?: 0f, w, h)
+            }
+            ImageMode.COMPARE -> {
+                // Originál vlevo, úprava vpravo; každá polovina má vlastní ořez, aby byl obličej uprostřed.
+                val half = w / 2
+                GLES30.glViewport(0, 0, half, h)
+                drawCamera(DisplayMapping.cover(bufferW, bufferH, rotation, half, h, mirror))
+                GLES30.glViewport(half, 0, w - half, h)
+                val m = DisplayMapping.cover(bufferW, bufferH, rotation, w - half, h, mirror)
+                drawCamera(m)
+                if (maskEnabled) drawMask(m)
+                GLES30.glViewport(0, 0, w, h)
+                // Dělicí čára.
+                GLES30.glEnable(GLES30.GL_SCISSOR_TEST)
+                GLES30.glScissor(half - 2, 0, 4, h)
+                GLES30.glClearColor(1f, 1f, 1f, 0.9f)
+                GLES30.glClear(GLES30.GL_COLOR_BUFFER_BIT)
+                GLES30.glDisable(GLES30.GL_SCISSOR_TEST)
+            }
+            else -> {
+                val m = DisplayMapping.cover(bufferW, bufferH, rotation, w, h, mirror)
+                drawCamera(m)
+                if (maskEnabled) drawMask(m, half = mode == ImageMode.HALF)
+            }
+        }
+    }
+
+    private fun drawMask(m: DisplayMapping, half: Boolean = false) {
         if (!mask.hasProfile) return
         val frame = faceSource() ?: return
         if (frame.faces.isEmpty()) return
@@ -430,7 +473,7 @@ class CameraRenderer(
         mask.draw(
             face, fx, fy, tilt, m, cameraMirror = m.mirror != textureMirrored,
             cameraTex = cameraTexId, texMatrix = texMatrix, shaderRotation = shaderRotation,
-            kidSkin = kidSkinSource(), amount = maskAmount, dadEyes = dadEyes,
+            kidSkin = kidSkinSource(), amount = maskAmount, dadEyes = dadEyes, half = half,
         )
     }
 

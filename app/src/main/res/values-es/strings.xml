@@ -73,6 +73,8 @@
 
     <string name="image_mode">Modo de imagen</string>
 
+    <string name="puppet_neutral">Pon cara seria</string>
+
     <plurals name="seconds">
         <item quantity="one">%d segundo</item>
         <item quantity="many">%d segundos</item>

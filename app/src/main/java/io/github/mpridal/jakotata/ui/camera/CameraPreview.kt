@@ -18,6 +18,7 @@ fun CameraPreview(
     maskEnabled: Boolean,
     maskAmount: Float,
     dadEyes: Boolean,
+    imageMode: io.github.mpridal.jakotata.core.render.ImageMode,
     modifier: Modifier = Modifier,
 ) {
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -29,6 +30,7 @@ fun CameraPreview(
     renderer.maskEnabled = maskEnabled
     renderer.maskAmount = maskAmount
     renderer.dadEyes = dadEyes
+    renderer.imageMode = imageMode
 
     DisposableEffect(lifecycleOwner, front, rotation) {
         state.tracker.latest.set(null)

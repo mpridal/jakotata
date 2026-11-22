@@ -118,3 +118,14 @@ na nový telefon (zadání kap. 8). `INTERNET` jen pro kontrolu aktualizací.
   Mazání do systémového koše (`createTrashRequest`, API 30+), jinak vlastní koš `files/media_trash/`.
 - **Předpověď pohybu masky:** detekce trvá 25–45 ms, maska by zaostávala. Tracker ukládá čas pořízení
   snímku a rychlost bodů; renderer body posune do času kresleného snímku (max. 120 ms).
+
+## Režimy obrazu (milník 7)
+
+- **Půl na půl:** maska s faktorem strany podle x textury táty vůči hřbetu nosu (landmark 168), měkký přechod;
+  vždy polovina obličeje, která je na obrazovce vlevo (u zrcadleného náhledu opačná strana obrázku).
+- **Před a po:** dva viewporty vedle sebe, každý s vlastním center crop (obličej uprostřed v obou), vlevo
+  originál, vpravo s maskou, bílá dělicí čára.
+- **Loutka:** `PuppetMath` – body dcery normalizované na střed a šířku oválu, rozdíl proti neutrálu (průměr
+  30 snímků po přepnutí režimu) × šířka obličeje táty se přičte k bodům táty. Fotka táty přes celou obrazovku
+  (center crop), deformovaná síť s měkkým okrajem, tmavá dutina úst pod otvorem rtů, oči z fotky.
+- **Zatím chybí:** 2,5D natočení Loutky podle matice hlavy a boční fotky v profilu (UV atlas kanonického modelu).

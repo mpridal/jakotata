@@ -12,6 +12,9 @@ import kotlin.math.sqrt
 object FaceTopology {
     const val MESH_VERTICES = 468
 
+    /** Hřbet nosu mezi očima – střed obličeje. */
+    const val NOSE_BRIDGE = 168
+
     /** Vnitřní obrys rtů – otvor úst (dceřina skutečná pusa prosvítá). */
     val INNER_LIPS = intArrayOf(78, 191, 80, 81, 82, 13, 312, 311, 310, 415, 308, 324, 318, 402, 317, 14, 87, 178, 88, 95)
 
