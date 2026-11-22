@@ -80,6 +80,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.runtime.produceState
 import io.github.mpridal.jakotata.core.render.ImageMode
 import io.github.mpridal.jakotata.core.settings.AppSettings
+import io.github.mpridal.jakotata.core.AdaptiveQuality
 import io.github.mpridal.jakotata.core.update.AppVersion
 import io.github.mpridal.jakotata.core.update.UpdateCheck
 import io.github.mpridal.jakotata.core.update.UpdateService
@@ -188,6 +189,19 @@ fun MainScreen() {
         }
     }
     val hazeState = remember { HazeState() }
+    // Adaptivní kvalita: vzorek fps každých 0,5 s (zadání kap. 5).
+    val quality = remember { AdaptiveQuality() }
+    var qualityLevel by remember { mutableIntStateOf(0) }
+    LaunchedEffect(Unit) {
+        while (true) {
+            delay(500)
+            PerfStats.sample()
+            if (quality.update(PerfStats.snapshot.value.renderFps, 0.5f)) {
+                qualityLevel = quality.level
+                state.renderer.shadingEnabled = quality.shadingTransfer
+            }
+        }
+    }
     val c = JakoTheme.colors
 
     // Převod hlasu běží, když je obrazovka vidět a je povolený mikrofon.
@@ -213,7 +227,10 @@ fun MainScreen() {
                 CameraPreview(state, front, showMesh, maskOn, amount, dadEyes, imageMode, Modifier.fillMaxSize())
             }
         }
-        CompositionLocalProvider(LocalHazeState provides hazeState) {
+        CompositionLocalProvider(
+            LocalHazeState provides hazeState,
+            io.github.mpridal.jakotata.ui.theme.LocalReduceTransparency provides (qualityLevel >= 2),
+        ) {
             val galleryThumb by produceState<android.graphics.Bitmap?>(null, lastItem, galleryOpen) {
                 value = withContext(Dispatchers.IO) { state.library.list().firstOrNull()?.let { state.library.thumbnail(it, 160) } }
             }
@@ -485,7 +502,6 @@ private fun DebugOverlay(state: CameraState, showMesh: Boolean, onToggleMesh: ()
     LaunchedEffect(Unit) {
         while (true) {
             delay(500)
-            PerfStats.sample()
             voiceInfo = "kid %.0f Hz · live %.0f ms".format(state.voice.kidF0(), state.voice.liveLatencyMs())
         }
     }

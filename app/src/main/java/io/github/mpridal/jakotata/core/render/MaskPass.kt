@@ -48,6 +48,8 @@ internal class MaskPass(private val topo: MaskTopology) {
         .asShortBuffer().apply { topo.triangles.forEach { put(it.toShort()) }; position(0) }
 
     val hasProfile get() = dadTex != 0
+    /** Přenos stínování (adaptivní kvalita ho může vypnout). */
+    var shading = true
     val dadTexture get() = dadTex
     val uvBuffer get() = uv
 
@@ -125,7 +127,7 @@ internal class MaskPass(private val topo: MaskTopology) {
         GLES30.glUniform3f(loc("uKidMean"), kid.meanL, kid.meanA, kid.meanB)
         GLES30.glUniform3f(loc("uKidStd"), kid.stdL, kid.stdA, kid.stdB)
         GLES30.glUniform1f(loc("uKidLuma"), max(kid.luma, 0.05f))
-        GLES30.glUniform1f(loc("uShade"), SHADE_STRENGTH)
+        GLES30.glUniform1f(loc("uShade"), if (shading) SHADE_STRENGTH else 0f)
         GLES30.glUniform1f(loc("uAmount"), strength)
         // Levá polovina na obrazovce: u zrcadleného náhledu je to pravá strana obrázku (větší x).
         GLES30.glUniform1f(loc("uHalf"), if (!half) 0f else if (mapping.mirror) 2f else 1f)

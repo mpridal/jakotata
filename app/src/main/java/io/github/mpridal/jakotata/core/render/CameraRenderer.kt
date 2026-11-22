@@ -48,6 +48,8 @@ class CameraRenderer(
     @Volatile var maskAmount: Float = 0.8f
     /** Volba „Tátovy oči“: díry pro oči zavřené. */
     @Volatile var dadEyes: Boolean = false
+    /** Adaptivní kvalita (zadání kap. 5): false = bez přenosu stínování. */
+    @Volatile var shadingEnabled: Boolean = true
 
     private val mask = MaskPass(maskTopology)
     private val puppet = PuppetPass(maskTopology)
@@ -467,6 +469,7 @@ class CameraRenderer(
         if (!mask.hasProfile) return
         val frame = faceSource() ?: return
         val (fx, fy) = analysisCorrection(frame)
+        mask.shading = shadingEnabled
         // Táta na každém nalezeném obličeji (nastavení „počet obličejů“ 1–2, zadání kap. 2.1).
         for (i in frame.faces.indices) {
             val face = frame.predicted(i, currentFrameNs, predictedFace)
